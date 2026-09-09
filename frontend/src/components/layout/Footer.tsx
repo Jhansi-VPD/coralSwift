@@ -14,9 +14,6 @@ export function Footer() {
 
   return (
     <footer className="bg-gradient-to-b from-[#0B192C] via-[#0A1424] to-[#060D17] border-t border-blue-900/50 pt-16 pb-12 relative overflow-hidden text-slate-300">
-      {/* Radiant Top Border Brand Accent */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-coral-500" />
-
       {/* Ambient Radial Glows */}
       <div className="absolute -top-24 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -26,12 +23,20 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-blue-900/50">
           
           {/* Brand & Overview */}
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            <Link href="/" className="inline-block bg-white p-3 rounded-2xl border border-slate-700/40 shadow-sm w-fit">
-              <Logo size="lg" showSponsored={true} />
-            </Link>
+          <div className="lg:col-span-2 flex flex-col gap-3.5">
+            <div className="flex flex-col gap-2.5">
+              <Link href="/" className="inline-block bg-white p-2.5 px-3.5 rounded-2xl border border-slate-700/40 shadow-sm w-fit transition-transform hover:scale-[1.01]">
+                <Logo size="lg" showSponsored={false} />
+              </Link>
+              <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                <span>Officially Partnered by</span>
+                <span className="font-semibold text-slate-200 bg-slate-800/90 px-2.5 py-1 rounded-lg border border-slate-700/80 shadow-2xs">
+                  VPD Technologies
+                </span>
+              </div>
+            </div>
             
-            <p className="text-sm text-slate-300 max-w-sm leading-relaxed mt-2">
+            <p className="text-sm text-slate-300 max-w-sm leading-relaxed mt-1">
               Next-generation enterprise software engineering consultancy. We engineer mission-critical cloud architectures, applied AI pipelines, and high-throughput distributed systems for global leaders.
             </p>
 
@@ -68,7 +73,7 @@ export function Footer() {
 
           {/* Solutions / Services */}
           <div>
-            <h4 className="text-xs font-mono uppercase tracking-wider text-blue-300 mb-4 font-bold">
+            <h4 className="text-sm sm:text-base font-bold uppercase tracking-wider text-blue-200 mb-4">
               Software Services
             </h4>
             <ul className="space-y-2.5 text-sm text-slate-300">
@@ -107,31 +112,28 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="text-xs font-mono uppercase tracking-wider text-blue-300 mb-4 font-bold">
+            <h4 className="text-sm sm:text-base font-bold uppercase tracking-wider text-blue-200 mb-4">
               Company
             </h4>
             <ul className="space-y-2.5 text-sm text-slate-300">
               <li>
                 <Link href="/about" className="hover:text-blue-400 font-medium transition-colors">
-                  About CoralSwift
+                  About Us
                 </Link>
               </li>
               <li>
                 <Link href="/case-studies" className="hover:text-blue-400 font-medium transition-colors">
-                  Verified Case Studies
+                  Case Studies
                 </Link>
               </li>
               <li>
-                <Link href="/careers" className="hover:text-blue-400 font-medium transition-colors flex items-center gap-1.5">
+                <Link href="/careers" className="hover:text-blue-400 font-medium transition-colors">
                   Careers
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 bg-blue-950 text-blue-300 font-bold rounded-full border border-blue-700/80 shadow-2xs">
-                    We're hiring
-                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/contact" className="hover:text-blue-400 font-medium transition-colors">
-                  Contact Leadership
+                  Contact
                 </Link>
               </li>
               <li>
@@ -149,7 +151,7 @@ export function Footer() {
 
           {/* Contact / Office */}
           <div>
-            <h4 className="text-xs font-mono uppercase tracking-wider text-blue-300 mb-4 font-bold">
+            <h4 className="text-sm sm:text-base font-bold uppercase tracking-wider text-blue-200 mb-4">
               Corporate Office
             </h4>
             <div className="space-y-3 text-xs text-slate-300">
