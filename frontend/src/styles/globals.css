@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11.2%;
+    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 24 95% 53%;
+    
+    --radius: 0.75rem;
+  }
+}
+
+body {
+  background-color: #FAFBFC;
+  color: #0F172A;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  selection-background-color: #F97316;
+  selection-color: #FFFFFF;
+}
+
+/* Light Enterprise Mesh Background */
+.bg-enterprise-canvas {
+  background-color: #FAFBFC;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.06) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(225, 29, 72, 0.05) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(79, 70, 229, 0.04) 0px, transparent 50%);
+}
+
+/* Crisp White Glass & Modern Card Styles */
+.glass-card-light {
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-3px);
+  border-color: rgba(249, 115, 22, 0.4);
+  box-shadow: 0 20px 40px -12px rgba(249, 115, 22, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+}
+
+/* Dark Enterprise Cards for Contrast Sections */
+.enterprise-dark-card {
+  background: linear-gradient(145deg, #0B1426 0%, #060C17 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.4);
+}
+
+/* Gradient Text Styles Matching CoralSwift Brand */
+.text-gradient-brand {
+  background: linear-gradient(135deg, #F97316 0%, #E11D48 45%, #4F46E5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-coral {
+  background: linear-gradient(135deg, #FB923C 0%, #EA580C 50%, #C2410C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-dark {
+  background: linear-gradient(180deg, #0F172A 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Subtle Grid Dot Matrix */
+.bg-dot-pattern {
+  background-image: radial-gradient(rgba(148, 163, 184, 0.25) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-grid-subtle {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #F97316;
+}
+
+/* Dedicated Table Scroller Class - Permanently Visible & High Contrast */
+.table-scroll-container {
+  overflow-x: scroll !important;
+  overflow-y: scroll !important;
+  scrollbar-width: thin;
+  scrollbar-color: #F97316 #E2E8F0;
+}
+
+.table-scroll-container::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+  display: block !important;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: #E2E8F0 !important;
+  border-radius: 6px !important;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: #F97316 !important;
+  border-radius: 6px !important;
+  border: 2px solid #E2E8F0 !important;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #EA580C !important;
+}
+
+/* Infinite Auto-Scrolling Marquee Track */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2rem;
+  animation: marquee-scroll 24s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-track:hover {
+  animation-play-state: paused;
+}
