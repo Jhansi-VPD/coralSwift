@@ -101,7 +101,7 @@ export default function AdminDashboardPage() {
                 {stats.active_jobs}
               </div>
               <div className="mt-2 text-xs text-indigo-600 font-mono font-semibold">
-                <Link href="/admin/careers" className="hover:underline">{stats.total_applications} Applications →</Link>
+                <Link href="/admin/careers?tab=applications" className="hover:underline">{stats.total_applications} Applications →</Link>
               </div>
             </div>
 
@@ -213,14 +213,14 @@ export default function AdminDashboardPage() {
           {/* Recent Applications */}
           <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-indigo-600" />
-                <h3 className="text-base font-bold text-[#0B1426] font-display">
+              <Link href="/admin/careers?tab=applications" className="flex items-center gap-2 group">
+                <Users className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform" />
+                <h3 className="text-base font-bold text-[#0B1426] font-display group-hover:text-indigo-600 transition-colors">
                   Recent Applications
                 </h3>
-              </div>
-              <Link href="/admin/careers" className="text-xs font-mono text-indigo-600 hover:underline font-semibold">
-                View All
+              </Link>
+              <Link href="/admin/careers?tab=applications" className="text-xs font-mono text-indigo-600 hover:underline font-semibold">
+                View All →
               </Link>
             </div>
 
@@ -229,10 +229,16 @@ export default function AdminDashboardPage() {
             ) : (
               <div className="space-y-3.5">
                 {recentApplications.map((app) => (
-                  <div key={app.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <Link
+                    key={app.id}
+                    href="/admin/careers?tab=applications"
+                    className="block p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-indigo-300 hover:bg-white hover:shadow-xs transition-all space-y-2 group cursor-pointer"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <div className="text-sm font-bold text-[#0B1426] font-display">{app.full_name}</div>
+                        <div className="text-sm font-bold text-[#0B1426] font-display group-hover:text-indigo-600 transition-colors">
+                          {app.full_name}
+                        </div>
                         <div className="text-xs text-slate-500 font-mono">{app.job_title}</div>
                       </div>
                       <Badge variant="blue" size="sm">{app.status}</Badge>
@@ -242,7 +248,7 @@ export default function AdminDashboardPage() {
                       <span>CV: {app.resume_filename}</span>
                       <span>{formatDate(app.created_at)}</span>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

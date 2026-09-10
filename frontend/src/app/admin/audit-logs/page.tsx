@@ -35,34 +35,33 @@ export default function AdminAuditLogsPage() {
 
       <div className="p-6 sm:p-8 max-w-7xl">
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-          {/* Dual Scroll Container: Side (Vertical) & Bottom (Horizontal) */}
-          <div className="table-scroll-container max-h-[360px]">
-            <table className="min-w-[1150px] w-full text-left text-xs">
-              <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs">
                 <tr>
-                  <th className="px-6 py-4 w-[280px]">Action</th>
-                  <th className="px-6 py-4 w-[240px]">Actor</th>
-                  <th className="px-6 py-4 w-[300px]">Target Entity</th>
-                  <th className="px-6 py-4 w-[160px]">IP Address</th>
-                  <th className="px-6 py-4 w-[170px]">Timestamp</th>
+                  <th className="px-6 py-4">Action</th>
+                  <th className="px-6 py-4">Actor</th>
+                  <th className="px-6 py-4">Target Entity</th>
+                  <th className="px-6 py-4">IP Address</th>
+                  <th className="px-6 py-4">Timestamp</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-mono">
                 {logs.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap">
                       <span className="text-coral-600 font-bold">{log.action}</span>
                     </td>
-                    <td className="px-6 py-4 text-slate-800">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap text-slate-800">
                       {log.user_email || 'admin@coralswift.com'}
                     </td>
-                    <td className="px-6 py-4 text-slate-600">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap text-slate-600">
                       {log.entity_type} {log.entity_id ? `(${log.entity_id})` : ''}
                     </td>
-                    <td className="px-6 py-4 text-slate-400">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap text-slate-400">
                       {log.ip_address || '127.0.0.1'}
                     </td>
-                    <td className="px-6 py-4 text-slate-500">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap text-slate-500">
                       {formatDate(log.created_at)}
                     </td>
                   </tr>

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Plus, Edit2, Trash2, Users, Briefcase, FileText, CheckCircle, ExternalLink, Mail, Phone, Globe } from 'lucide-react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Button } from '@/components/ui/Button';
@@ -10,12 +11,22 @@ import { getJobs, getApplications, deleteJob, updateApplicationStatus } from '@/
 import { Job, Application } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
 
-export default function AdminCareersPage() {
+function AdminCareersPageContent() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState<'jobs' | 'applications'>('jobs');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (tabParam === 'applications') {
+      setActiveTab('applications');
+    } else if (tabParam === 'jobs') {
+      setActiveTab('jobs');
+    }
+  }, [tabParam]);
 
   const loadData = async () => {
     const [jData, aData] = await Promise.all([getJobs(), getApplications()]);
@@ -88,63 +99,60 @@ export default function AdminCareersPage() {
         {activeTab === 'jobs' ? (
           <>
             <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-              {/* Dual Scroll Container: Side (Vertical) & Bottom (Horizontal) */}
-              <div className="table-scroll-container max-h-[360px]">
-                <table className="min-w-[1200px] w-full text-left text-xs">
-                  <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs">
+              <div className={`overflow-x-auto ${jobs.length > 8 ? 'max-h-[600px] overflow-y-auto' : ''}`}>
+                <table className="w-full text-left text-xs min-w-[850px]">
+                  <thead className={`bg-slate-50 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs ${jobs.length > 8 ? 'sticky top-0 z-10' : ''}`}>
                     <tr>
-                      <th className="px-6 py-4 w-[340px]">Title &amp; Location</th>
-                      <th className="px-6 py-4 w-[220px]">Department</th>
-                      <th className="px-6 py-4 w-[220px]">Type / Model</th>
-                      <th className="px-6 py-4 w-[140px]">Applications</th>
-                      <th className="px-6 py-4 w-[140px]">Status</th>
-                      <th className="px-6 py-4 w-[160px] text-right">Actions</th>
+                      <th className="px-6 py-4 min-w-[280px]">Title &amp; Location</th>
+                      <th className="px-6 py-4 whitespace-nowrap">Department</th>
+                      <th className="px-6 py-4 whitespace-nowrap">Type / Model</th>
+                      <th className="px-6 py-4 whitespace-nowrap">Status</th>
+                      <th className="px-6 py-4 text-right whitespace-nowrap w-[140px]">Actions</th>
                     </tr>
                   </thead>
                 <tbody className="divide-y divide-slate-100">
                   {jobs.map((j) => (
                     <tr key={j.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-[#0B1426] text-sm font-display">{j.title}</div>
-                        <div className="text-slate-400 font-mono text-[11px]">{j.location}</div>
+                      <td className="px-6 py-4 align-middle">
+                        <div className="font-bold text-[#0B1426] text-sm font-display leading-snug">{j.title}</div>
+                        <div className="text-slate-400 font-mono text-[11px] mt-0.5">{j.location}</div>
                       </td>
-                      <td className="px-6 py-4 text-slate-700">
+                      <td className="px-6 py-4 align-middle whitespace-nowrap">
                         <Badge variant="blue" size="sm">{j.department}</Badge>
                       </td>
-                      <td className="px-6 py-4 text-slate-600 font-mono">
+                      <td className="px-6 py-4 align-middle whitespace-nowrap text-slate-600 font-mono">
                         {j.work_model} • {j.employment_type}
                       </td>
-                      <td className="px-6 py-4 text-coral-600 font-mono font-bold">
-                        {j.applications_count || 0}
-                      </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 align-middle whitespace-nowrap">
                         <Badge variant={j.status === 'active' ? 'emerald' : 'slate'} size="sm">
                           {j.status}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 text-right space-x-2">
-                        <a
-                          href={`/careers/${j.slug || j.id}`}
-                          target="_blank"
-                          className="inline-flex p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-coral-600 hover:bg-slate-200 transition-colors"
-                          title="View Public Role"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                        <button
-                          onClick={() => handleEditJob(j)}
-                          className="inline-flex p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
-                          title="Edit Job"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteJob(j.id)}
-                          className="inline-flex p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                          title="Delete Job"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      <td className="px-6 py-4 text-right align-middle whitespace-nowrap">
+                        <div className="inline-flex items-center justify-end gap-1.5">
+                          <a
+                            href={`/careers/${j.slug || j.id}`}
+                            target="_blank"
+                            className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-coral-600 hover:bg-slate-200 transition-colors"
+                            title="View Public Role"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                          <button
+                            onClick={() => handleEditJob(j)}
+                            className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+                            title="Edit Job"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteJob(j.id)}
+                            className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                            title="Delete Job"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -247,5 +255,13 @@ export default function AdminCareersPage() {
         onSaved={loadData}
       />
     </div>
+  );
+}
+
+export default function AdminCareersPage() {
+  return (
+    <Suspense fallback={<div className="flex-1 p-8 text-slate-500 font-mono text-xs">Loading Careers &amp; Talent Pipeline...</div>}>
+      <AdminCareersPageContent />
+    </Suspense>
   );
 }

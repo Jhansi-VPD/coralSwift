@@ -34,6 +34,7 @@ export function JobEditorModal({ isOpen, onClose, job, onSaved }: JobEditorModal
 
   const [responsibilitiesStr, setResponsibilitiesStr] = useState('');
   const [requirementsStr, setRequirementsStr] = useState('');
+  const [benefitsStr, setBenefitsStr] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export function JobEditorModal({ isOpen, onClose, job, onSaved }: JobEditorModal
       setFormData(job);
       setResponsibilitiesStr(job.responsibilities ? job.responsibilities.join('\n') : '');
       setRequirementsStr(job.requirements ? job.requirements.join('\n') : '');
+      setBenefitsStr(job.benefits ? job.benefits.join('\n') : '');
     } else {
       setFormData({
         title: '',
@@ -60,6 +62,7 @@ export function JobEditorModal({ isOpen, onClose, job, onSaved }: JobEditorModal
       });
       setResponsibilitiesStr('');
       setRequirementsStr('');
+      setBenefitsStr('');
     }
   }, [job, isOpen]);
 
@@ -78,11 +81,13 @@ export function JobEditorModal({ isOpen, onClose, job, onSaved }: JobEditorModal
     try {
       const resp = responsibilitiesStr.split('\n').map(s => s.trim()).filter(Boolean);
       const reqs = requirementsStr.split('\n').map(s => s.trim()).filter(Boolean);
+      const bens = benefitsStr.split('\n').map(s => s.trim()).filter(Boolean);
 
       await saveJob({
         ...formData,
         responsibilities: resp,
         requirements: reqs,
+        benefits: bens,
       });
 
       onSaved();
@@ -258,6 +263,19 @@ export function JobEditorModal({ isOpen, onClose, job, onSaved }: JobEditorModal
               className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-mono font-bold uppercase text-slate-700 mb-1">
+            Compensation Perks & Benefits (1 per line)
+          </label>
+          <textarea
+            rows={3}
+            value={benefitsStr}
+            onChange={(e) => setBenefitsStr(e.target.value)}
+            placeholder="Comprehensive Health, Dental & Vision insurance&#10;$3,000 annual learning & conference stipend&#10;Flexible remote-first workspace & equipment allowance&#10;Generous 401(k) matching"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
+          />
         </div>
 
         <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-200">

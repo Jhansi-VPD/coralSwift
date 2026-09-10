@@ -55,67 +55,68 @@ export default function AdminCaseStudiesPage() {
 
       <div className="p-6 sm:p-8 max-w-7xl">
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-          {/* Dual Scroll Container: Side (Vertical) & Bottom (Horizontal) */}
-          <div className="table-scroll-container max-h-[360px]">
-            <table className="min-w-[1250px] w-full text-left text-xs">
-              <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[950px]">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs">
                 <tr>
-                  <th className="px-6 py-4 w-[340px]">Title &amp; Client</th>
-                  <th className="px-6 py-4 w-[240px]">Industry</th>
-                  <th className="px-6 py-4 w-[200px]">Key Metrics</th>
-                  <th className="px-6 py-4 w-[150px]">Featured</th>
-                  <th className="px-6 py-4 w-[150px]">Status</th>
-                  <th className="px-6 py-4 w-[170px] text-right">Actions</th>
+                  <th className="px-6 py-4 min-w-[280px]">Title &amp; Client</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Industry</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Key Metrics</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Featured</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Status</th>
+                  <th className="px-6 py-4 text-right whitespace-nowrap w-[140px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {studies.map((cs) => (
                   <tr key={cs.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-[#0B1426] text-sm font-display">{cs.title}</div>
-                      <div className="text-slate-400 font-mono text-[11px]">Client: {cs.client_name}</div>
+                    <td className="px-6 py-4 align-middle">
+                      <div className="font-bold text-[#0B1426] text-sm font-display leading-snug">{cs.title}</div>
+                      <div className="text-slate-400 font-mono text-[11px] mt-0.5">Client: {cs.client_name}</div>
                     </td>
-                    <td className="px-6 py-4 text-slate-700">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap">
                       <Badge variant="blue" size="sm">{cs.industry}</Badge>
                     </td>
-                    <td className="px-6 py-4 text-emerald-700 font-mono font-bold">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap text-emerald-700 font-mono font-bold">
                       {cs.outcome_metrics?.[0]?.metric || 'Verified'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap">
                       {cs.is_featured ? (
                         <Badge variant="coral" size="sm">Featured</Badge>
                       ) : (
                         <span className="text-slate-400 font-mono">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap">
                       <Badge variant={cs.status === 'published' ? 'emerald' : 'slate'} size="sm">
                         {cs.status}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <a
-                        href={`/case-studies/${cs.slug}`}
-                        target="_blank"
-                        className="inline-flex p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-coral-600 hover:bg-slate-200 transition-colors"
-                        title="View Public Page"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                      <button
-                        onClick={() => handleEdit(cs)}
-                        className="inline-flex p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
-                        title="Edit Case Study"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(cs.id)}
-                        className="inline-flex p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                        title="Delete Case Study"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <td className="px-6 py-4 text-right align-middle whitespace-nowrap">
+                      <div className="inline-flex items-center justify-end gap-1.5">
+                        <a
+                          href={`/case-studies/${cs.slug}`}
+                          target="_blank"
+                          className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-coral-600 hover:bg-slate-200 transition-colors"
+                          title="View Public Page"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                        <button
+                          onClick={() => handleEdit(cs)}
+                          className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+                          title="Edit Case Study"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(cs.id)}
+                          className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                          title="Delete Case Study"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

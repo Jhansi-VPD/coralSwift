@@ -26,7 +26,6 @@ import {
   Server, 
   ShieldAlert, 
   Network,
-  Code2,
   Boxes
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
@@ -494,23 +493,7 @@ ${profile.rfcDetails}`;
               </div>
             </div>
 
-            {/* 3. Live Architectural Blueprint Snippet */}
-            <div className="bg-[#0B1426] rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl overflow-hidden">
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-                <div className="flex items-center gap-2 text-xs font-mono text-slate-300">
-                  <Code2 className="w-4 h-4 text-coral-400" />
-                  <span className="text-white font-bold">{profile.codeSample.filename}</span>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 uppercase">
-                  {profile.codeSample.language}
-                </span>
-              </div>
-              <pre className="text-xs font-mono text-emerald-400 overflow-x-auto p-2 leading-relaxed selection:bg-coral-500 selection:text-white">
-                <code>{profile.codeSample.code}</code>
-              </pre>
-            </div>
-
-            {/* 4. Key Deliverables & Capabilities */}
+            {/* 3. Key Deliverables & Capabilities */}
             <div>
               <div className="flex items-center gap-2 mb-4 text-xs font-mono uppercase tracking-wider text-coral-600 font-bold">
                 <ShieldCheck className="w-4 h-4" />

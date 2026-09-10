@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useConsultation } from '@/components/ui/ConsultationContext';
 import { CaseStudy } from '@/lib/types';
+import { generateCaseStudyPDF } from '@/lib/case-study-pdf';
 
 interface CaseStudyDetailClientProps {
   study: CaseStudy;
@@ -28,6 +29,7 @@ interface CaseStudyDetailClientProps {
 export function CaseStudyDetailClient({ study }: CaseStudyDetailClientProps) {
   const { openConsultation } = useConsultation();
   const [copied, setCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {
@@ -38,34 +40,14 @@ export function CaseStudyDetailClient({ study }: CaseStudyDetailClientProps) {
   };
 
   const handleDownloadBrief = () => {
-    const briefContent = `# CoralSwift Verified Case Study: ${study.title}
-Client: ${study.client_name}
-Industry: ${study.industry}
-Status: Production Deployed
-
-## Telemetry Metrics
-${study.outcome_metrics.map(m => `- ${m.metric}: ${m.label}`).join('\n')}
-
-## The Challenge
-${study.challenge}
-
-## The Engineered Solution
-${study.solution}
-
-## Implementation Details
-${study.implementation}
-
-## Technology Stack
-${study.tech_stack.join(', ')}`;
-
-    const blob = new Blob([briefContent], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `coralswift-case-study-${study.slug}.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      setIsDownloading(true);
+      generateCaseStudyPDF(study);
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -118,9 +100,9 @@ ${study.tech_stack.join(', ')}`;
                     </>
                   )}
                 </Button>
-                <Button variant="secondary" size="sm" onClick={handleDownloadBrief} className="text-xs">
+                <Button variant="secondary" size="sm" onClick={handleDownloadBrief} className="text-xs" disabled={isDownloading}>
                   <Download className="w-3.5 h-3.5 mr-1" />
-                  <span>Download Brief</span>
+                  <span>{isDownloading ? 'Generating PDF...' : 'Download PDF Brief'}</span>
                 </Button>
               </div>
             </div>

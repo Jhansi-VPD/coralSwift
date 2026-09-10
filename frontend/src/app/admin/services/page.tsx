@@ -63,59 +63,56 @@ export default function AdminServicesPage() {
 
       <div className="p-6 sm:p-8 max-w-7xl">
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-          {/* Dual Scroll Container: Side (Vertical) & Bottom (Horizontal) */}
-          <div className="table-scroll-container max-h-[360px]">
-            <table className="min-w-[1150px] w-full text-left text-xs">
-              <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[750px]">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs">
                 <tr>
-                  <th className="px-6 py-4 w-[350px]">Title &amp; Slug</th>
-                  <th className="px-6 py-4 w-[240px]">Category</th>
-                  <th className="px-6 py-4 w-[140px]">Order</th>
-                  <th className="px-6 py-4 w-[160px]">Status</th>
-                  <th className="px-6 py-4 w-[160px] text-right">Actions</th>
+                  <th className="px-6 py-4 min-w-[280px]">Title &amp; Slug</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Category</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Status</th>
+                  <th className="px-6 py-4 text-right whitespace-nowrap w-[140px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {services.map((s) => (
                   <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-[#0B1426] text-sm font-display">{s.title}</div>
-                      <div className="text-slate-400 font-mono text-[11px]">/services/{s.slug}</div>
+                    <td className="px-6 py-4 align-middle">
+                      <div className="font-bold text-[#0B1426] text-sm font-display leading-snug">{s.title}</div>
+                      <div className="text-slate-400 font-mono text-[11px] mt-0.5">/services/{s.slug}</div>
                     </td>
-                    <td className="px-6 py-4 text-slate-700">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap">
                       <Badge variant="slate" size="sm">{s.category}</Badge>
                     </td>
-                    <td className="px-6 py-4 text-slate-600 font-mono font-medium">
-                      #{s.order_index}
-                    </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 align-middle whitespace-nowrap">
                       <Badge variant={s.status === 'published' ? 'emerald' : 'slate'} size="sm">
                         {s.status}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <a
-                        href={`/services/${s.slug}`}
-                        target="_blank"
-                        className="inline-flex p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-coral-600 hover:bg-slate-200 transition-colors"
-                        title="View Public Page"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                      <button
-                        onClick={() => handleEdit(s)}
-                        className="inline-flex p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
-                        title="Edit Service"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(s.id)}
-                        className="inline-flex p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                        title="Delete Service"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <td className="px-6 py-4 text-right align-middle whitespace-nowrap">
+                      <div className="inline-flex items-center justify-end gap-1.5">
+                        <a
+                          href={`/services/${s.slug}`}
+                          target="_blank"
+                          className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-coral-600 hover:bg-slate-200 transition-colors"
+                          title="View Public Page"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                        <button
+                          onClick={() => handleEdit(s)}
+                          className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+                          title="Edit Service"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(s.id)}
+                          className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                          title="Delete Service"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
