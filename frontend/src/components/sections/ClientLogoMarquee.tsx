@@ -41,12 +41,12 @@ export function ClientLogoMarquee() {
       </div>
 
       {/* Auto-Scrolling Continuous Tracks */}
-      <div className="flex w-full overflow-hidden select-none">
+      <div className="marquee-wrapper flex w-full overflow-hidden select-none">
         <div className="animate-marquee-track pr-8">
           {clients.map((client, idx) => (
             <div
               key={`track1-${idx}`}
-              className="flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-slate-50/90 border border-slate-200/80 shadow-xs hover:border-coral-300 hover:bg-white transition-all cursor-default group shrink-0"
+              className="flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-slate-50/90 border border-slate-200/80 shadow-xs hover:border-coral-300 hover:bg-white hover:shadow-md transition-all cursor-pointer group shrink-0"
             >
               <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center group-hover:scale-110 group-hover:shadow-sm transition-all duration-300">
                 {client.icon}
@@ -67,7 +67,7 @@ export function ClientLogoMarquee() {
           {clients.map((client, idx) => (
             <div
               key={`track2-${idx}`}
-              className="flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-slate-50/90 border border-slate-200/80 shadow-xs hover:border-coral-300 hover:bg-white transition-all cursor-default group shrink-0"
+              className="flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-slate-50/90 border border-slate-200/80 shadow-xs hover:border-coral-300 hover:bg-white hover:shadow-md transition-all cursor-pointer group shrink-0"
             >
               <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center group-hover:scale-110 group-hover:shadow-sm transition-all duration-300">
                 {client.icon}

@@ -35,8 +35,11 @@ body {
   color: #0F172A;
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
-  selection-background-color: #F97316;
-  selection-color: #FFFFFF;
+}
+
+::selection {
+  background-color: #F97316;
+  color: #FFFFFF;
 }
 
 /* Light Enterprise Mesh Background */
@@ -76,18 +79,21 @@ body {
 .text-gradient-brand {
   background: linear-gradient(135deg, #F97316 0%, #E11D48 45%, #4F46E5 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-gradient-coral {
   background: linear-gradient(135deg, #FB923C 0%, #EA580C 50%, #C2410C 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-gradient-dark {
   background: linear-gradient(180deg, #0F172A 0%, #334155 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -171,6 +177,8 @@ body {
   will-change: transform;
 }
 
+/* Pause all scrolling tracks whenever any card or the marquee container is hovered */
+.marquee-wrapper:hover .animate-marquee-track,
 .animate-marquee-track:hover {
   animation-play-state: paused;
 }
