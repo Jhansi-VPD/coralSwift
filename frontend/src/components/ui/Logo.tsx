@@ -29,7 +29,7 @@ export function Logo({
     <div className={cn('flex flex-col select-none group', className)}>
       <div className="flex items-center">
         <img
-          src="/logo.jpg"
+          src="/images/coralswift_logo_2.png"
           alt="CoralSwift Technologies"
           className={cn('object-contain max-w-full transition-transform duration-300 group-hover:scale-[1.02]', selectedDim.className)}
         />
