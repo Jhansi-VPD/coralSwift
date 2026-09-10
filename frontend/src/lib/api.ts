@@ -50,47 +50,52 @@ export async function getServices(status?: 'published' | 'draft' | 'archived'): 
     }
   }
 
-  let servicesList: Service[] = [...memoryServices];
-
   const supabase = createClient();
   if (supabase) {
     try {
-      const { data, error } = await supabase.from('services').select('*').order('order_index', { ascending: true });
-      if (!error && data && data.length > 0) {
-        const map = new Map<string, Service>();
-        
-        // Add DB items first
-        (data as Service[]).forEach(item => {
-          map.set(item.id, item);
-          if (item.slug) map.set(item.slug, item);
-        });
-
-        // Override with memoryServices items (contains updated status/fields)
-        memoryServices.forEach(memItem => {
-          map.set(memItem.id, memItem);
-          if (memItem.slug) map.set(memItem.slug, memItem);
-        });
-
-        servicesList = Array.from(new Set(Array.from(map.values())));
+      let query = supabase.from('services').select('*').order('order_index', { ascending: true });
+      if (status) {
+        query = query.eq('status', status);
+      }
+      const { data, error } = await query;
+      if (!error && data !== null) {
+        let items = data as Service[];
+        items = items.filter(s => !deletedServiceIds.has(s.id) && !deletedServiceIds.has(s.slug));
+        return items;
       }
     } catch (e) {
       console.warn('Supabase getServices notice:', e);
     }
   }
-  
-  // Exclude deleted items
-  servicesList = servicesList.filter(s => !deletedServiceIds.has(s.id) && !deletedServiceIds.has(s.slug));
 
+  let items = memoryServices.filter(s => !deletedServiceIds.has(s.id) && !deletedServiceIds.has(s.slug));
   if (status) {
-    return servicesList.filter(s => s.status === status);
+    return items.filter(s => s.status === status);
   }
-  return servicesList;
+  return items;
 }
 
 export async function getServiceBySlug(slug: string): Promise<Service | null> {
   if (deletedServiceIds.has(slug)) return null;
-  const services = await getServices();
-  return services.find(s => s.slug === slug) || null;
+
+  const supabase = createClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('slug', slug)
+        .maybeSingle();
+      if (!error && data) {
+        if (deletedServiceIds.has(data.id) || deletedServiceIds.has(data.slug)) return null;
+        return data as Service;
+      }
+    } catch (e) {
+      console.warn('Supabase getServiceBySlug notice:', e);
+    }
+  }
+
+  return memoryServices.find(s => s.slug === slug && !deletedServiceIds.has(s.id) && !deletedServiceIds.has(s.slug)) || null;
 }
 
 export async function saveService(service: Partial<Service>): Promise<Service> {
@@ -119,23 +124,18 @@ export async function saveService(service: Partial<Service>): Promise<Service> {
   const supabase = createClient();
   const now = new Date().toISOString();
   
-  const payload: any = {
+  // Database columns matching Supabase public.services schema
+  const dbPayload: any = {
     title: service.title || 'Untitled Service',
     slug: service.slug || 'service-' + Date.now(),
     category: service.category || 'Engineering',
     short_description: service.short_description || '',
     overview: service.overview || '',
     capabilities: service.capabilities || [],
-    approach: service.approach || [],
     deliverables: service.deliverables || [],
-    requirements: service.requirements || '',
     cta_text: service.cta_text || 'Discuss Your Architecture',
     icon: service.icon || 'Cpu',
-    order_index: service.order_index ?? (memoryServices.length + 1),
     status: service.status || 'published',
-    meta_title: service.meta_title || null,
-    meta_description: service.meta_description || null,
-    canonical_url: service.canonical_url || null,
     updated_at: now,
   };
 
@@ -147,10 +147,11 @@ export async function saveService(service: Partial<Service>): Promise<Service> {
         // Update by UUID
         const { data, error } = await supabase
           .from('services')
-          .update(payload)
+          .update(dbPayload)
           .eq('id', service.id)
           .select()
           .maybeSingle();
+        if (error) console.warn('Supabase update service error:', error.message || error);
         if (!error && data) savedItem = data as Service;
       }
       
@@ -165,10 +166,11 @@ export async function saveService(service: Partial<Service>): Promise<Service> {
         if (existing?.id) {
           const { data, error } = await supabase
             .from('services')
-            .update(payload)
+            .update(dbPayload)
             .eq('id', existing.id)
             .select()
             .maybeSingle();
+          if (error) console.warn('Supabase update service by slug error:', error.message || error);
           if (!error && data) savedItem = data as Service;
         }
       }
@@ -177,9 +179,10 @@ export async function saveService(service: Partial<Service>): Promise<Service> {
         // Insert new row (omitting id so Supabase uuid_generate_v4() generates valid UUID)
         const { data, error } = await supabase
           .from('services')
-          .insert({ ...payload, created_at: now })
+          .insert({ ...dbPayload, created_at: now })
           .select()
           .single();
+        if (error) console.warn('Supabase insert service error:', error.message || error);
         if (!error && data) savedItem = data as Service;
       }
     } catch (e) {
@@ -188,21 +191,36 @@ export async function saveService(service: Partial<Service>): Promise<Service> {
   }
 
   if (savedItem) {
+    const fullSaved: Service = {
+      ...savedItem,
+      approach: service.approach || [],
+      requirements: service.requirements || undefined,
+      order_index: service.order_index ?? (memoryServices.length + 1),
+      meta_title: service.meta_title || undefined,
+      meta_description: service.meta_description || undefined,
+      canonical_url: service.canonical_url || undefined,
+    };
     const idx = memoryServices.findIndex(s => s.id === savedItem!.id || s.slug === savedItem!.slug);
     if (idx !== -1) {
-      memoryServices[idx] = savedItem;
+      memoryServices[idx] = fullSaved;
     } else {
-      memoryServices.unshift(savedItem);
+      memoryServices.unshift(fullSaved);
     }
     logAuditAction('SAVE_SERVICE', 'services', savedItem.id, { title: savedItem.title });
-    return savedItem;
+    return fullSaved;
   }
 
   // Memory fallback
   const localId = service.id || ('s_' + Math.random().toString(36).substring(2, 9));
   const fallbackService: Service = {
-    ...payload,
+    ...dbPayload,
     id: localId,
+    approach: service.approach || [],
+    requirements: service.requirements || undefined,
+    order_index: service.order_index ?? (memoryServices.length + 1),
+    meta_title: service.meta_title || undefined,
+    meta_description: service.meta_description || undefined,
+    canonical_url: service.canonical_url || undefined,
     created_at: service.created_at || now,
     updated_at: now
   };
