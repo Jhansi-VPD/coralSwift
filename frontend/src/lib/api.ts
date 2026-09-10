@@ -27,6 +27,7 @@ let memoryEnquiries = [...initialEnquiries];
 let memoryApplications = [...initialApplications];
 let memorySettings: SiteSettings = { ...initialSiteSettings };
 let memoryAuditLogs = [...initialAuditLogs];
+let deletedServiceIds = new Set<string>();
 
 function isValidUUID(str?: string | null): boolean {
   if (!str) return false;
@@ -37,46 +38,84 @@ function isValidUUID(str?: string | null): boolean {
 // 1. SERVICES API
 // ==============================================================================
 export async function getServices(status?: 'published' | 'draft' | 'archived'): Promise<Service[]> {
+  if (typeof window !== 'undefined') {
+    try {
+      const url = status ? `/api/services?status=${status}` : '/api/services';
+      const res = await fetch(url);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Client getServices API fetch error:', e);
+    }
+  }
+
+  let servicesList: Service[] = [...memoryServices];
+
   const supabase = createClient();
   if (supabase) {
     try {
-      let query = supabase.from('services').select('*').order('order_index', { ascending: true });
-      if (status) {
-        query = query.eq('status', status);
-      }
-      const { data, error } = await query;
-      if (!error && data !== null) {
-        return data as Service[];
+      const { data, error } = await supabase.from('services').select('*').order('order_index', { ascending: true });
+      if (!error && data && data.length > 0) {
+        const map = new Map<string, Service>();
+        
+        // Add DB items first
+        (data as Service[]).forEach(item => {
+          map.set(item.id, item);
+          if (item.slug) map.set(item.slug, item);
+        });
+
+        // Override with memoryServices items (contains updated status/fields)
+        memoryServices.forEach(memItem => {
+          map.set(memItem.id, memItem);
+          if (memItem.slug) map.set(memItem.slug, memItem);
+        });
+
+        servicesList = Array.from(new Set(Array.from(map.values())));
       }
     } catch (e) {
       console.warn('Supabase getServices notice:', e);
     }
   }
   
+  // Exclude deleted items
+  servicesList = servicesList.filter(s => !deletedServiceIds.has(s.id) && !deletedServiceIds.has(s.slug));
+
   if (status) {
-    return memoryServices.filter(s => s.status === status);
+    return servicesList.filter(s => s.status === status);
   }
-  return memoryServices;
+  return servicesList;
 }
 
 export async function getServiceBySlug(slug: string): Promise<Service | null> {
-  const supabase = createClient();
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('slug', slug)
-        .maybeSingle();
-      if (!error && data) return data as Service;
-    } catch (e) {
-      console.warn('Supabase getServiceBySlug notice:', e);
-    }
-  }
-  return memoryServices.find(s => s.slug === slug) || null;
+  if (deletedServiceIds.has(slug)) return null;
+  const services = await getServices();
+  return services.find(s => s.slug === slug) || null;
 }
 
 export async function saveService(service: Partial<Service>): Promise<Service> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(service)
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        const idx = memoryServices.findIndex(s => s.id === saved.id || (saved.slug && s.slug === saved.slug));
+        if (idx !== -1) {
+          memoryServices[idx] = saved;
+        } else {
+          memoryServices.unshift(saved);
+        }
+        return saved;
+      }
+    } catch (err) {
+      console.warn('Client saveService fetch error:', err);
+    }
+  }
+
   const supabase = createClient();
   const now = new Date().toISOString();
   
@@ -113,7 +152,9 @@ export async function saveService(service: Partial<Service>): Promise<Service> {
           .select()
           .maybeSingle();
         if (!error && data) savedItem = data as Service;
-      } else if (service.slug) {
+      }
+      
+      if (!savedItem && service.slug) {
         // Check if matching row exists by slug
         const { data: existing } = await supabase
           .from('services')
@@ -177,6 +218,23 @@ export async function saveService(service: Partial<Service>): Promise<Service> {
 }
 
 export async function deleteService(idOrSlug: string): Promise<boolean> {
+  deletedServiceIds.add(idOrSlug);
+
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch(`/api/services?id=${encodeURIComponent(idOrSlug)}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        memoryServices = memoryServices.filter(s => s.id !== idOrSlug && s.slug !== idOrSlug);
+        return data.success;
+      }
+    } catch (err) {
+      console.warn('Client deleteService fetch error:', err);
+    }
+  }
+
   const supabase = createClient();
   if (supabase) {
     try {
@@ -189,8 +247,9 @@ export async function deleteService(idOrSlug: string): Promise<boolean> {
       console.warn('Supabase deleteService notice:', e);
     }
   }
+  
   memoryServices = memoryServices.filter(s => s.id !== idOrSlug && s.slug !== idOrSlug);
-  logAuditAction('DELETE_SERVICE', 'services', idOrSlug, {});
+  logAuditAction('DELETE_SERVICE', 'services', idOrSlug);
   return true;
 }
 

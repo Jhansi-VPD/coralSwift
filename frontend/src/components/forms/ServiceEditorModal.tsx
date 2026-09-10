@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Service } from '@/lib/types';
@@ -15,6 +16,7 @@ interface ServiceEditorModalProps {
 }
 
 export function ServiceEditorModal({ isOpen, onClose, service, onSaved }: ServiceEditorModalProps) {
+  const router = useRouter();
   const [formData, setFormData] = useState<Partial<Service>>({
     title: '',
     slug: '',
@@ -79,6 +81,7 @@ export function ServiceEditorModal({ isOpen, onClose, service, onSaved }: Servic
         deliverables: delivs,
       });
 
+      router.refresh();
       onSaved();
       onClose();
     } catch (err) {

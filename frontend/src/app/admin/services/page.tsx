@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ExternalLink, Layers } from 'lucide-react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
@@ -10,6 +11,7 @@ import { getServices, deleteService } from '@/lib/api';
 import { Service } from '@/lib/types';
 
 export default function AdminServicesPage() {
+  const router = useRouter();
   const [services, setServices] = useState<Service[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,6 +46,7 @@ export default function AdminServicesPage() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this service?')) {
       await deleteService(id);
+      router.refresh();
       loadServices();
     }
   };
