@@ -45,7 +45,7 @@ export async function getServices(status?: 'published' | 'draft' | 'archived'): 
         query = query.eq('status', status);
       }
       const { data, error } = await query;
-      if (!error && data && data.length > 0) {
+      if (!error && data !== null) {
         return data as Service[];
       }
     } catch (e) {
@@ -206,7 +206,7 @@ export async function getJobs(status?: 'active' | 'closed' | 'draft'): Promise<J
         query = query.eq('status', status);
       }
       const { data, error } = await query;
-      if (!error && data && data.length > 0) {
+      if (!error && data !== null) {
         return (data as any[]).map((j: any) => ({
           ...j,
           applications_count: j.applications?.[0]?.count || 0

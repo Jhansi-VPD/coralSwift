@@ -123,61 +123,82 @@ export default async function CareersPage() {
             </div>
           </div>
 
-          <div className="space-y-5">
-            {jobs.map((job) => (
+          {jobs.length === 0 ? (
+            <div className="bg-white rounded-2xl p-12 border border-slate-200/80 shadow-sm text-center max-w-2xl mx-auto">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200">
+                <Briefcase className="w-8 h-8 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-bold text-[#0B1426] mb-2 font-display">
+                No Active Openings Currently
+              </h3>
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                We are not actively recruiting for open roles right now, but we are always excited to connect with exceptional distributed systems engineers, cloud architects, and AI specialists.
+              </p>
               <Link
-                key={job.id}
-                href={`/careers/${job.slug || job.id}`}
-                className="glass-card-light glass-card-hover rounded-2xl p-7 sm:p-8 border border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-6 group transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-coral-300 relative overflow-hidden block"
+                href="/contact"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-coral-500 text-white font-semibold text-sm shadow-md shadow-coral-500/20 hover:bg-coral-600 transition-all duration-300"
               >
-                {/* Left vertical accent on hover */}
-                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-coral-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                <div className="max-w-2xl pl-1">
-                  {/* Badges */}
-                  <div className="flex flex-wrap items-center gap-2 mb-3">
-                    <Badge variant="blue" size="sm">
-                      {job.department}
-                    </Badge>
-                    <Badge variant="indigo" size="sm">
-                      {job.work_model}
-                    </Badge>
-                    <Badge variant="slate" size="sm">
-                      {job.experience_level}
-                    </Badge>
-                  </div>
-
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#0B1426] group-hover:text-coral-600 transition-colors font-display mb-2">
-                    {job.title}
-                  </h3>
-
-                  <p className="text-sm text-slate-600 leading-relaxed line-clamp-2 mb-4">
-                    {job.short_description}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-500 font-medium">
-                    <div className="flex items-center gap-1.5 text-slate-700">
-                      <MapPin className="w-3.5 h-3.5 text-coral-600" />
-                      <span>{job.location}</span>
-                    </div>
-                    {job.salary_range && (
-                      <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
-                        <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{job.salary_range}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="shrink-0 flex items-center gap-3 self-start lg:self-center pt-2 lg:pt-0">
-                  <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-coral-500 text-white font-semibold text-xs shadow-md shadow-coral-500/20 group-hover:bg-coral-600 group-hover:shadow-lg transition-all duration-300">
-                    <span>View Role & Apply</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </div>
+                <span>Get in Touch with Talent Team</span>
+                <ArrowRight className="w-4 h-4" />
               </Link>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {jobs.map((job) => (
+                <Link
+                  key={job.id}
+                  href={`/careers/${job.slug || job.id}`}
+                  className="glass-card-light glass-card-hover rounded-2xl p-7 sm:p-8 border border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-6 group transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-coral-300 relative overflow-hidden block"
+                >
+                  {/* Left vertical accent on hover */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-coral-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                  <div className="max-w-2xl pl-1">
+                    {/* Badges */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <Badge variant="blue" size="sm">
+                        {job.department}
+                      </Badge>
+                      <Badge variant="indigo" size="sm">
+                        {job.work_model}
+                      </Badge>
+                      <Badge variant="slate" size="sm">
+                        {job.experience_level}
+                      </Badge>
+                    </div>
+
+                    <h3 className="text-xl sm:text-2xl font-bold text-[#0B1426] group-hover:text-coral-600 transition-colors font-display mb-2">
+                      {job.title}
+                    </h3>
+
+                    <p className="text-sm text-slate-600 leading-relaxed line-clamp-2 mb-4">
+                      {job.short_description}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-500 font-medium">
+                      <div className="flex items-center gap-1.5 text-slate-700">
+                        <MapPin className="w-3.5 h-3.5 text-coral-600" />
+                        <span>{job.location}</span>
+                      </div>
+                      {job.salary_range && (
+                        <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                          <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{job.salary_range}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 flex items-center gap-3 self-start lg:self-center pt-2 lg:pt-0">
+                    <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-coral-500 text-white font-semibold text-xs shadow-md shadow-coral-500/20 group-hover:bg-coral-600 group-hover:shadow-lg transition-all duration-300">
+                      <span>View Role & Apply</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
 
         </div>
       </section>
