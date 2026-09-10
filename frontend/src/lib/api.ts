@@ -28,6 +28,7 @@ let memoryApplications = [...initialApplications];
 let memorySettings: SiteSettings = { ...initialSiteSettings };
 let memoryAuditLogs = [...initialAuditLogs];
 let deletedServiceIds = new Set<string>();
+let deletedCaseStudyIds = new Set<string>();
 
 function isValidUUID(str?: string | null): boolean {
   if (!str) return false;
@@ -573,26 +574,21 @@ export async function updateApplicationStatus(id: string, status: Application['s
 // 4. CASE STUDIES API
 // ==============================================================================
 export async function getCaseStudies(featuredOnly: boolean = false): Promise<CaseStudy[]> {
-  const supabase = createClient();
-  if (supabase) {
+  if (typeof window !== 'undefined') {
     try {
-      let query = supabase.from('case_studies').select('*').eq('status', 'published').order('created_at', { ascending: false });
-      if (featuredOnly) {
-        query = query.eq('is_featured', true);
-      }
-      const { data, error } = await query;
-      if (!error && data) {
-        const remoteList = data as CaseStudy[];
-        const remoteIds = new Set(remoteList.map(d => d.id || d.slug));
-        const unsynced = memoryCaseStudies.filter(m => m.status === 'published' && (!featuredOnly || m.is_featured) && !remoteIds.has(m.id) && !remoteIds.has(m.slug));
-        return [...unsynced, ...remoteList];
+      const url = `/api/case-studies${featuredOnly ? '?featured=true' : ''}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data: CaseStudy[] = await res.json();
+        return data.filter(c => c.status === 'published');
       }
     } catch (e) {
-      console.warn('Supabase getCaseStudies notice:', e);
+      console.warn('Client getCaseStudies API fetch error:', e);
     }
   }
 
-  let results = memoryCaseStudies.filter(c => c.status === 'published');
+  const all = await getAllCaseStudiesAdmin();
+  let results = all.filter(c => c.status === 'published');
   if (featuredOnly) {
     results = results.filter(c => c.is_featured);
   }
@@ -600,37 +596,79 @@ export async function getCaseStudies(featuredOnly: boolean = false): Promise<Cas
 }
 
 export async function getAllCaseStudiesAdmin(): Promise<CaseStudy[]> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/case-studies?mode=admin');
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Client getAllCaseStudiesAdmin API fetch error:', e);
+    }
+  }
+
+  let caseStudiesList: CaseStudy[] = [...memoryCaseStudies];
+
   const supabase = createClient();
   if (supabase) {
     try {
       const { data, error } = await supabase.from('case_studies').select('*').order('created_at', { ascending: false });
-      if (!error && data) {
-        const remoteList = data as CaseStudy[];
-        const remoteIds = new Set(remoteList.map(d => d.id || d.slug));
-        const unsynced = memoryCaseStudies.filter(m => !remoteIds.has(m.id) && !remoteIds.has(m.slug));
-        return [...unsynced, ...remoteList];
+      if (!error && data && data.length > 0) {
+        const map = new Map<string, CaseStudy>();
+        
+        // Add DB items first
+        (data as CaseStudy[]).forEach(item => {
+          map.set(item.id, item);
+          if (item.slug) map.set(item.slug, item);
+        });
+
+        // Override with memoryCaseStudies items (contains updated status/fields)
+        memoryCaseStudies.forEach(memItem => {
+          map.set(memItem.id, memItem);
+          if (memItem.slug) map.set(memItem.slug, memItem);
+        });
+
+        caseStudiesList = Array.from(new Set(Array.from(map.values())));
       }
     } catch (e) {
       console.warn('Supabase getAllCaseStudiesAdmin notice:', e);
     }
   }
-  return memoryCaseStudies;
+
+  // Exclude deleted items
+  caseStudiesList = caseStudiesList.filter(c => !deletedCaseStudyIds.has(c.id) && !deletedCaseStudyIds.has(c.slug));
+  return caseStudiesList;
 }
 
 export async function getCaseStudyBySlug(slug: string): Promise<CaseStudy | null> {
-  const supabase = createClient();
-  if (supabase) {
-    try {
-      const { data, error } = await supabase.from('case_studies').select('*').eq('slug', slug).maybeSingle();
-      if (!error && data) return data as CaseStudy;
-    } catch (e) {
-      console.warn('Supabase getCaseStudyBySlug notice:', e);
-    }
-  }
-  return memoryCaseStudies.find(c => c.slug === slug) || null;
+  if (deletedCaseStudyIds.has(slug)) return null;
+  const all = await getAllCaseStudiesAdmin();
+  return all.find(c => c.slug === slug) || null;
 }
 
 export async function saveCaseStudy(caseStudy: Partial<CaseStudy>): Promise<CaseStudy> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/case-studies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(caseStudy)
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        const idx = memoryCaseStudies.findIndex(c => c.id === saved.id || (saved.slug && c.slug === saved.slug));
+        if (idx !== -1) {
+          memoryCaseStudies[idx] = saved;
+        } else {
+          memoryCaseStudies.unshift(saved);
+        }
+        return saved;
+      }
+    } catch (err) {
+      console.warn('Client saveCaseStudy fetch error:', err);
+    }
+  }
+
   const supabase = createClient();
   const now = new Date().toISOString();
 
@@ -727,6 +765,23 @@ export async function saveCaseStudy(caseStudy: Partial<CaseStudy>): Promise<Case
 }
 
 export async function deleteCaseStudy(idOrSlug: string): Promise<boolean> {
+  deletedCaseStudyIds.add(idOrSlug);
+
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch(`/api/case-studies?id=${encodeURIComponent(idOrSlug)}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        memoryCaseStudies = memoryCaseStudies.filter(c => c.id !== idOrSlug && c.slug !== idOrSlug);
+        return data.success;
+      }
+    } catch (err) {
+      console.warn('Client deleteCaseStudy fetch error:', err);
+    }
+  }
+
   const supabase = createClient();
   if (supabase) {
     try {

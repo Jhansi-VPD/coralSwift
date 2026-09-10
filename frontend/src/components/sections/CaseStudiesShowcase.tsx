@@ -11,7 +11,8 @@ interface CaseStudiesShowcaseProps {
 }
 
 export function CaseStudiesShowcase({ caseStudies, limit = 3 }: CaseStudiesShowcaseProps) {
-  const displayStudies = caseStudies.slice(0, limit);
+  const publishedStudies = (caseStudies || []).filter(c => c.status === 'published');
+  const displayStudies = limit ? publishedStudies.slice(0, limit) : publishedStudies;
 
   return (
     <section className="py-24 relative bg-slate-50/70 border-t border-slate-200/80">

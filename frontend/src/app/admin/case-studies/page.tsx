@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ExternalLink, TrendingUp } from 'lucide-react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
@@ -10,6 +11,7 @@ import { getAllCaseStudiesAdmin, deleteCaseStudy } from '@/lib/api';
 import { CaseStudy } from '@/lib/types';
 
 export default function AdminCaseStudiesPage() {
+  const router = useRouter();
   const [studies, setStudies] = useState<CaseStudy[]>([]);
   const [selectedStudy, setSelectedStudy] = useState<CaseStudy | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,6 +38,7 @@ export default function AdminCaseStudiesPage() {
   const handleDelete = async (id: string) => {
     if (confirm('Delete this case study?')) {
       await deleteCaseStudy(id);
+      router.refresh();
       loadData();
     }
   };

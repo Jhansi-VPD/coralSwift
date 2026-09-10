@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -15,6 +16,7 @@ interface CaseStudyEditorModalProps {
 }
 
 export function CaseStudyEditorModal({ isOpen, onClose, caseStudy, onSaved }: CaseStudyEditorModalProps) {
+  const router = useRouter();
   const [formData, setFormData] = useState<Partial<CaseStudy>>({
     title: '',
     slug: '',
@@ -91,6 +93,7 @@ export function CaseStudyEditorModal({ isOpen, onClose, caseStudy, onSaved }: Ca
         outcome_metrics: outcomeMetrics,
       });
 
+      router.refresh();
       onSaved();
       onClose();
     } catch (err) {
