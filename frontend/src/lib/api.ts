@@ -54,15 +54,14 @@ export async function getServices(status?: 'published' | 'draft' | 'archived'): 
   const supabase = createClient();
   if (supabase) {
     try {
-      let query = supabase.from('services').select('*').order('order_index', { ascending: true });
+      let query = supabase.from('services').select('*').order('created_at', { ascending: true });
       if (status) {
         query = query.eq('status', status);
       }
       const { data, error } = await query;
       if (!error && data !== null) {
         let items = data as Service[];
-        items = items.filter(s => !deletedServiceIds.has(s.id) && !deletedServiceIds.has(s.slug));
-        return items;
+        return items.filter(s => !deletedServiceIds.has(s.id) && !deletedServiceIds.has(s.slug));
       }
     } catch (e) {
       console.warn('Supabase getServices notice:', e);
@@ -276,6 +275,18 @@ export async function deleteService(idOrSlug: string): Promise<boolean> {
 // 2. JOBS & CAREERS API
 // ==============================================================================
 export async function getJobs(status?: 'active' | 'closed' | 'draft'): Promise<Job[]> {
+  if (typeof window !== 'undefined') {
+    try {
+      const url = status ? `/api/jobs?status=${status}` : '/api/jobs';
+      const res = await fetch(url);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Client getJobs API fetch error:', e);
+    }
+  }
+
   const supabase = createClient();
   if (supabase) {
     try {
@@ -285,10 +296,22 @@ export async function getJobs(status?: 'active' | 'closed' | 'draft'): Promise<J
       }
       const { data, error } = await query;
       if (!error && data !== null) {
-        return (data as any[]).map((j: any) => ({
+        const items = (data as any[]).map((j: any) => ({
           ...j,
           applications_count: j.applications?.[0]?.count || 0
         })) as Job[];
+        
+        // Sync memory
+        items.forEach(item => {
+          const idx = memoryJobs.findIndex(m => m.id === item.id || m.slug === item.slug);
+          if (idx !== -1) {
+            memoryJobs[idx] = item;
+          } else {
+            memoryJobs.unshift(item);
+          }
+        });
+
+        return items;
       }
     } catch (e) {
       console.warn('Supabase getJobs notice:', e);
@@ -321,6 +344,28 @@ export async function getJobByIdOrSlug(identifier: string): Promise<Job | null> 
 }
 
 export async function saveJob(job: Partial<Job>): Promise<Job> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(job)
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        const idx = memoryJobs.findIndex(j => j.id === saved.id || (saved.slug && j.slug === saved.slug));
+        if (idx !== -1) {
+          memoryJobs[idx] = saved;
+        } else {
+          memoryJobs.unshift(saved);
+        }
+        return saved;
+      }
+    } catch (err) {
+      console.warn('Client saveJob fetch error:', err);
+    }
+  }
+
   const supabase = createClient();
   const now = new Date().toISOString();
 
@@ -415,6 +460,21 @@ export async function saveJob(job: Partial<Job>): Promise<Job> {
 }
 
 export async function deleteJob(idOrSlug: string): Promise<boolean> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch(`/api/jobs?id=${encodeURIComponent(idOrSlug)}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        memoryJobs = memoryJobs.filter(j => j.id !== idOrSlug && j.slug !== idOrSlug);
+        return data.success;
+      }
+    } catch (err) {
+      console.warn('Client deleteJob fetch error:', err);
+    }
+  }
+
   const supabase = createClient();
   if (supabase) {
     try {
@@ -602,12 +662,35 @@ export async function getCaseStudies(featuredOnly: boolean = false): Promise<Cas
     }
   }
 
-  const all = await getAllCaseStudiesAdmin();
-  let results = all.filter(c => c.status === 'published');
-  if (featuredOnly) {
-    results = results.filter(c => c.is_featured);
+  const supabase = createClient();
+  if (supabase) {
+    try {
+      let query = supabase
+        .from('case_studies')
+        .select('*')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false });
+      if (featuredOnly) {
+        query = query.eq('is_featured', true);
+      }
+      const { data, error } = await query;
+      if (!error && data) {
+        return (data as CaseStudy[]).filter(
+          c => !deletedCaseStudyIds.has(c.id) && !deletedCaseStudyIds.has(c.slug)
+        );
+      }
+    } catch (e) {
+      console.warn('Supabase getCaseStudies notice:', e);
+    }
   }
-  return results;
+
+  let items = memoryCaseStudies.filter(
+    c => !deletedCaseStudyIds.has(c.id) && !deletedCaseStudyIds.has(c.slug) && c.status === 'published'
+  );
+  if (featuredOnly) {
+    return items.filter(c => c.is_featured);
+  }
+  return items;
 }
 
 export async function getAllCaseStudiesAdmin(): Promise<CaseStudy[]> {
@@ -622,37 +705,26 @@ export async function getAllCaseStudiesAdmin(): Promise<CaseStudy[]> {
     }
   }
 
-  let caseStudiesList: CaseStudy[] = [...memoryCaseStudies];
-
   const supabase = createClient();
   if (supabase) {
     try {
-      const { data, error } = await supabase.from('case_studies').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('case_studies')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (!error && data && data.length > 0) {
-        const map = new Map<string, CaseStudy>();
-        
-        // Add DB items first
-        (data as CaseStudy[]).forEach(item => {
-          map.set(item.id, item);
-          if (item.slug) map.set(item.slug, item);
-        });
-
-        // Override with memoryCaseStudies items (contains updated status/fields)
-        memoryCaseStudies.forEach(memItem => {
-          map.set(memItem.id, memItem);
-          if (memItem.slug) map.set(memItem.slug, memItem);
-        });
-
-        caseStudiesList = Array.from(new Set(Array.from(map.values())));
+        return (data as CaseStudy[]).filter(
+          c => !deletedCaseStudyIds.has(c.id) && !deletedCaseStudyIds.has(c.slug)
+        );
       }
     } catch (e) {
       console.warn('Supabase getAllCaseStudiesAdmin notice:', e);
     }
   }
 
-  // Exclude deleted items
-  caseStudiesList = caseStudiesList.filter(c => !deletedCaseStudyIds.has(c.id) && !deletedCaseStudyIds.has(c.slug));
-  return caseStudiesList;
+  return memoryCaseStudies.filter(
+    c => !deletedCaseStudyIds.has(c.id) && !deletedCaseStudyIds.has(c.slug)
+  );
 }
 
 export async function getCaseStudyBySlug(slug: string): Promise<CaseStudy | null> {
@@ -698,10 +770,8 @@ export async function saveCaseStudy(caseStudy: Partial<CaseStudy>): Promise<Case
     implementation: caseStudy.implementation || '',
     outcome_metrics: caseStudy.outcome_metrics || [],
     tech_stack: caseStudy.tech_stack || [],
-    related_service_slug: caseStudy.related_service_slug || null,
     is_featured: !!caseStudy.is_featured,
     status: caseStudy.status || 'published',
-    hero_image: caseStudy.hero_image || null,
     updated_at: now,
   };
 

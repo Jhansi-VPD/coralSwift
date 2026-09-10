@@ -2,15 +2,15 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Logo } from '@/components/ui/Logo';
 import { logAuditAction } from '@/lib/api';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@coralswift.com');
-  const [password, setPassword] = useState('CoralAdmin2026!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,7 +21,7 @@ export default function AdminLoginPage() {
 
     // Default admin credentials configured in PRD
     if (
-      (email === 'admin@coralswift.com' && password === 'CoralAdmin2026!') ||
+      (email.trim().toLowerCase() === 'admin@coralswift.com' && password === 'CoralAdmin2026!') ||
       (email.includes('@') && password.length >= 6)
     ) {
       if (typeof window !== 'undefined') {
@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
       }, 500);
     } else {
       setIsLoading(false);
-      setError('Invalid credentials. Use admin@coralswift.com / CoralAdmin2026!');
+      setError('Invalid email or password. Please try again.');
     }
   };
 
@@ -74,7 +74,7 @@ export default function AdminLoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@coralswift.com"
+                  placeholder="Enter administrator email"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-500"
                 />
               </div>
@@ -91,7 +91,7 @@ export default function AdminLoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="Enter password"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-500"
                 />
               </div>
@@ -108,24 +108,6 @@ export default function AdminLoginPage() {
               <ArrowRight className="w-4 h-4 ml-1.5" />
             </Button>
           </form>
-
-          {/* Quick Demo Credentials Hint */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600 space-y-1">
-              <div className="flex items-center gap-1.5 text-coral-600 font-bold mb-1">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Baseline Admin Access:</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Email:</span>
-                <span className="text-slate-900 font-semibold">admin@coralswift.com</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Password:</span>
-                <span className="text-slate-900 font-semibold">CoralAdmin2026!</span>
-              </div>
-            </div>
-          </div>
         </div>
 
       </div>

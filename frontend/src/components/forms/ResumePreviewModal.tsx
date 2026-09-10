@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  FileText, 
-  Download, 
-  ExternalLink, 
-  X, 
-  Mail, 
-  Phone, 
-  Globe, 
-  Briefcase, 
-  CheckCircle2, 
+import {
+  FileText,
+  Download,
+  ExternalLink,
+  X,
+  Mail,
+  Phone,
+  Globe,
+  Briefcase,
+  CheckCircle2,
   FileCheck2
 } from 'lucide-react';
 import { Application } from '@/lib/types';
@@ -26,45 +26,45 @@ interface ResumePreviewModalProps {
 export async function generateCandidateDossierPDF(app: Application) {
   const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF();
-  
+
   // Header bar
   doc.setFillColor(11, 20, 38); // CoralSwift dark slate #0B1426
   doc.rect(0, 0, 210, 35, 'F');
-  
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.text('CORALSWIFT', 14, 18);
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(235, 94, 60); // Coral accent
   doc.text('CANDIDATE TALENT DOSSIER & APPLICATION RECORD', 14, 26);
-  
+
   // Candidate Info
   doc.setTextColor(15, 23, 42);
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text(app.full_name || 'Applicant', 14, 48);
-  
+
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
   doc.text(`Applied Position: ${app.job_title || 'Engineering Role'}`, 14, 56);
   doc.text(`Application Status: ${app.status?.toUpperCase() || 'SUBMITTED'}`, 14, 62);
   doc.text(`Submission Date: ${app.created_at ? new Date(app.created_at).toLocaleDateString() : 'Recent'}`, 14, 68);
-  
+
   // Separator
   doc.setDrawColor(226, 232, 240);
   doc.setLineWidth(0.5);
   doc.line(14, 73, 196, 73);
-  
+
   // Contact Details Section
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(11, 20, 38);
   doc.text('CONTACT & VERIFICATION DETAILS', 14, 82);
-  
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(51, 65, 85);
@@ -84,14 +84,14 @@ export async function generateCandidateDossierPDF(app: Application) {
   }
   y += 7;
   doc.text(`Original Attached File: ${app.resume_filename || 'candidate_resume.pdf'}`, 14, y);
-  
+
   // Cover Note Section
   y += 14;
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(11, 20, 38);
   doc.text('CANDIDATE STATEMENT & COVER NOTE', 14, y);
-  
+
   y += 8;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -99,14 +99,14 @@ export async function generateCandidateDossierPDF(app: Application) {
   const noteText = app.cover_note || 'Candidate submitted application with attached resume file.';
   const splitNote = doc.splitTextToSize(noteText, 182);
   doc.text(splitNote, 14, y);
-  
+
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184);
   doc.text('Confidential Candidate Record • CoralSwift Talent Engineering Platform', 14, 285);
-  
-  const downloadName = app.resume_filename?.endsWith('.pdf') 
-    ? app.resume_filename 
+
+  const downloadName = app.resume_filename?.endsWith('.pdf')
+    ? app.resume_filename
     : `${(app.full_name || 'candidate').replace(/\s+/g, '_')}_resume.pdf`;
   doc.save(downloadName);
 }
@@ -148,7 +148,7 @@ export function ResumePreviewModal({ isOpen, onClose, application }: ResumePrevi
   const resumeSource = application.resume_url || application.resume_path;
   const isEmbeddablePdf = Boolean(
     resumeSource && (
-      resumeSource.startsWith('data:application/pdf') || 
+      resumeSource.startsWith('data:application/pdf') ||
       (resumeSource.startsWith('http') && resumeSource.toLowerCase().includes('.pdf')) ||
       resumeSource.startsWith('blob:')
     )
@@ -176,14 +176,14 @@ export function ResumePreviewModal({ isOpen, onClose, application }: ResumePrevi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden">
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-[#0B1426]/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
         onClick={onClose}
       />
 
       {/* Modal Dialog */}
       <div className="relative w-full max-w-5xl bg-white text-slate-900 border border-slate-200 rounded-3xl shadow-2xl z-10 max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-        
+
         {/* Modal Top Header */}
         <div className="px-6 py-4 bg-[#0B1426] text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800">
           <div className="flex items-center gap-3.5">
@@ -207,17 +207,15 @@ export function ResumePreviewModal({ isOpen, onClose, application }: ResumePrevi
               <div className="flex bg-slate-800/80 rounded-xl p-1 border border-slate-700/60 mr-2 text-xs">
                 <button
                   onClick={() => setActiveTab('document')}
-                  className={`px-3 py-1 rounded-lg font-semibold transition-colors ${
-                    activeTab === 'document' ? 'bg-coral-500 text-white' : 'text-slate-300 hover:text-white'
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-semibold transition-colors ${activeTab === 'document' ? 'bg-coral-500 text-white' : 'text-slate-300 hover:text-white'
+                    }`}
                 >
                   <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> PDF View</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('dossier')}
-                  className={`px-3 py-1 rounded-lg font-semibold transition-colors ${
-                    activeTab === 'dossier' ? 'bg-coral-500 text-white' : 'text-slate-300 hover:text-white'
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-semibold transition-colors ${activeTab === 'dossier' ? 'bg-coral-500 text-white' : 'text-slate-300 hover:text-white'
+                    }`}
                 >
                   <span className="flex items-center gap-1.5"><FileCheck2 className="w-3.5 h-3.5" /> Summary</span>
                 </button>
@@ -251,7 +249,7 @@ export function ResumePreviewModal({ isOpen, onClose, application }: ResumePrevi
 
         {/* Modal Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
-          
+
           {/* If PDF Document view selected and PDF available */}
           {activeTab === 'document' && isEmbeddablePdf ? (
             <div className="space-y-4">
@@ -304,7 +302,7 @@ export function ResumePreviewModal({ isOpen, onClose, application }: ResumePrevi
                   <h5 className="text-xs font-mono font-bold uppercase text-slate-500 tracking-wider">
                     Contact & Channels
                   </h5>
-                  
+
                   <div className="space-y-2.5 text-xs">
                     <div className="flex items-center gap-2.5 text-slate-700">
                       <Mail className="w-4 h-4 text-coral-600 shrink-0" />

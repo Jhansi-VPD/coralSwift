@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Job } from '@/lib/types';
@@ -15,6 +16,7 @@ interface JobEditorModalProps {
 }
 
 export function JobEditorModal({ isOpen, onClose, job, onSaved }: JobEditorModalProps) {
+  const router = useRouter();
   const [formData, setFormData] = useState<Partial<Job>>({
     title: '',
     slug: '',
@@ -90,6 +92,7 @@ export function JobEditorModal({ isOpen, onClose, job, onSaved }: JobEditorModal
         benefits: bens,
       });
 
+      router.refresh();
       onSaved();
       onClose();
     } catch (err) {

@@ -7,7 +7,7 @@ import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ServiceEditorModal } from '@/components/forms/ServiceEditorModal';
-import { getServices, deleteService } from '@/lib/api';
+import { getServices, saveService, deleteService } from '@/lib/api';
 import { Service } from '@/lib/types';
 
 export default function AdminServicesPage() {
@@ -41,6 +41,16 @@ export default function AdminServicesPage() {
   const handleCreate = () => {
     setSelectedService(null);
     setIsModalOpen(true);
+  };
+
+  const handleStatusChange = async (srv: Service, newStatus: Service['status']) => {
+    try {
+      await saveService({ ...srv, status: newStatus });
+      router.refresh();
+      loadServices();
+    } catch (err) {
+      console.error('Failed to update service status:', err);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -87,9 +97,21 @@ export default function AdminServicesPage() {
                       <Badge variant="slate" size="sm">{s.category}</Badge>
                     </td>
                     <td className="px-6 py-4 align-middle whitespace-nowrap">
-                      <Badge variant={s.status === 'published' ? 'emerald' : 'slate'} size="sm">
-                        {s.status}
-                      </Badge>
+                      <select
+                        value={s.status}
+                        onChange={(e) => handleStatusChange(s, e.target.value as any)}
+                        className={`px-2.5 py-1 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-coral-500/20 cursor-pointer ${
+                          s.status === 'published'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : s.status === 'draft'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-slate-100 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        <option value="published">Published</option>
+                        <option value="draft">Draft</option>
+                        <option value="archived">Archived</option>
+                      </select>
                     </td>
                     <td className="px-6 py-4 text-right align-middle whitespace-nowrap">
                       <div className="inline-flex items-center justify-end gap-1.5">

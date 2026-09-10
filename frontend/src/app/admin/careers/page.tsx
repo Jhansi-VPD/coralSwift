@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { JobEditorModal } from '@/components/forms/JobEditorModal';
 import { ResumePreviewModal, downloadResumeFile } from '@/components/forms/ResumePreviewModal';
-import { getJobs, getApplications, deleteJob, updateApplicationStatus } from '@/lib/api';
+import { getJobs, getApplications, saveJob, deleteJob, updateApplicationStatus } from '@/lib/api';
 import { Job, Application } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
 
@@ -48,6 +48,15 @@ function AdminCareersPageContent() {
   const handleCreateJob = () => {
     setSelectedJob(null);
     setIsModalOpen(true);
+  };
+
+  const handleJobStatusChange = async (job: Job, newStatus: Job['status']) => {
+    try {
+      await saveJob({ ...job, status: newStatus });
+      loadData();
+    } catch (err) {
+      console.error('Failed to update job status:', err);
+    }
   };
 
   const handleDeleteJob = async (id: string) => {
@@ -126,9 +135,21 @@ function AdminCareersPageContent() {
                         {j.work_model} • {j.employment_type}
                       </td>
                       <td className="px-6 py-4 align-middle whitespace-nowrap">
-                        <Badge variant={j.status === 'active' ? 'emerald' : 'slate'} size="sm">
-                          {j.status}
-                        </Badge>
+                        <select
+                          value={j.status}
+                          onChange={(e) => handleJobStatusChange(j, e.target.value as any)}
+                          className={`px-2.5 py-1 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-coral-500/20 cursor-pointer ${
+                            j.status === 'active'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : j.status === 'draft'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          <option value="active">Active</option>
+                          <option value="draft">Draft</option>
+                          <option value="closed">Closed</option>
+                        </select>
                       </td>
                       <td className="px-6 py-4 text-right align-middle whitespace-nowrap">
                         <div className="inline-flex items-center justify-end gap-1.5">
