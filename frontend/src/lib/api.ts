@@ -504,7 +504,12 @@ export async function getCaseStudies(featuredOnly: boolean = false): Promise<Cas
         query = query.eq('is_featured', true);
       }
       const { data, error } = await query;
-      if (!error && data && data.length > 0) return data as CaseStudy[];
+      if (!error && data) {
+        const remoteList = data as CaseStudy[];
+        const remoteIds = new Set(remoteList.map(d => d.id || d.slug));
+        const unsynced = memoryCaseStudies.filter(m => m.status === 'published' && (!featuredOnly || m.is_featured) && !remoteIds.has(m.id) && !remoteIds.has(m.slug));
+        return [...unsynced, ...remoteList];
+      }
     } catch (e) {
       console.warn('Supabase getCaseStudies notice:', e);
     }
@@ -522,7 +527,12 @@ export async function getAllCaseStudiesAdmin(): Promise<CaseStudy[]> {
   if (supabase) {
     try {
       const { data, error } = await supabase.from('case_studies').select('*').order('created_at', { ascending: false });
-      if (!error && data && data.length > 0) return data as CaseStudy[];
+      if (!error && data) {
+        const remoteList = data as CaseStudy[];
+        const remoteIds = new Set(remoteList.map(d => d.id || d.slug));
+        const unsynced = memoryCaseStudies.filter(m => !remoteIds.has(m.id) && !remoteIds.has(m.slug));
+        return [...unsynced, ...remoteList];
+      }
     } catch (e) {
       console.warn('Supabase getAllCaseStudiesAdmin notice:', e);
     }
@@ -576,6 +586,7 @@ export async function saveCaseStudy(caseStudy: Partial<CaseStudy>): Promise<Case
           .eq('id', caseStudy.id)
           .select()
           .maybeSingle();
+        if (error) console.warn('Supabase update case_study error:', error.message || error);
         if (!error && data) savedItem = data as CaseStudy;
       } else if (caseStudy.slug) {
         const { data: existing } = await supabase
@@ -590,6 +601,7 @@ export async function saveCaseStudy(caseStudy: Partial<CaseStudy>): Promise<Case
             .eq('id', existing.id)
             .select()
             .maybeSingle();
+          if (error) console.warn('Supabase update case_study by slug error:', error.message || error);
           if (!error && data) savedItem = data as CaseStudy;
         }
       }
@@ -600,6 +612,7 @@ export async function saveCaseStudy(caseStudy: Partial<CaseStudy>): Promise<Case
           .insert({ ...payload, created_at: now })
           .select()
           .single();
+        if (error) console.warn('Supabase insert case_study error:', error.message || error);
         if (!error && data) savedItem = data as CaseStudy;
       }
     } catch (e) {

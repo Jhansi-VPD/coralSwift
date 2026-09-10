@@ -35,9 +35,9 @@ export default function AdminAuditLogsPage() {
 
       <div className="p-6 sm:p-8 max-w-7xl">
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs">
+          <div className="table-scroll-container">
+            <table className="w-full text-left text-xs min-w-[750px]">
+              <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs">
                 <tr>
                   <th className="px-6 py-4">Action</th>
                   <th className="px-6 py-4">Actor</th>

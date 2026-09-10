@@ -129,30 +129,34 @@ body {
   background: #F97316;
 }
 
-/* Table Container - Clean responsive scroll without forcing vertical height clipping */
+/* Dedicated Table Scroller - Custom Coral/Orange Scroller */
 .table-scroll-container {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 460px;
   scrollbar-width: thin;
-  scrollbar-color: #CBD5E1 #F1F5F9;
+  scrollbar-color: #F97316 #E2E8F0;
 }
 
 .table-scroll-container::-webkit-scrollbar {
-  height: 6px;
-  width: 6px;
+  width: 8px;
+  height: 8px;
+  display: block;
 }
 
 .table-scroll-container::-webkit-scrollbar-track {
-  background: #F1F5F9;
-  border-radius: 4px;
+  background: #E2E8F0;
+  border-radius: 6px;
 }
 
 .table-scroll-container::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
+  background: #F97316;
+  border-radius: 6px;
+  border: 2px solid #E2E8F0;
 }
 
 .table-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: #F97316;
+  background: #EA580C;
 }
 
 /* Infinite Auto-Scrolling Marquee Track */

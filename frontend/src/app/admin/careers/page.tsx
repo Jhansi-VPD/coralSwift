@@ -99,9 +99,9 @@ function AdminCareersPageContent() {
         {activeTab === 'jobs' ? (
           <>
             <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-              <div className={`overflow-x-auto ${jobs.length > 8 ? 'max-h-[600px] overflow-y-auto' : ''}`}>
+              <div className="table-scroll-container">
                 <table className="w-full text-left text-xs min-w-[850px]">
-                  <thead className={`bg-slate-50 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs ${jobs.length > 8 ? 'sticky top-0 z-10' : ''}`}>
+                  <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-200 text-slate-500 font-mono uppercase font-bold shadow-xs">
                     <tr>
                       <th className="px-6 py-4 min-w-[280px]">Title &amp; Location</th>
                       <th className="px-6 py-4 whitespace-nowrap">Department</th>
