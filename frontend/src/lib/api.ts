@@ -445,6 +445,7 @@ export async function submitApplication(appData: {
   cover_note?: string;
   resume_filename: string;
   resume_path: string;
+  resume_url?: string;
 }): Promise<{ success: boolean; id: string; message: string }> {
   const supabase = createClient();
   const now = new Date().toISOString();
@@ -474,7 +475,7 @@ export async function submitApplication(appData: {
         linkedin_url: appData.linkedin_url || null,
         cover_note: appData.cover_note || null,
         resume_filename: appData.resume_filename,
-        resume_path: appData.resume_path,
+        resume_path: appData.resume_path || appData.resume_url || `/uploads/resumes/${appData.resume_filename}`,
         status: 'submitted',
       };
       if (validJobId) {
@@ -487,6 +488,7 @@ export async function submitApplication(appData: {
         const newApp: Application = {
           ...payload,
           id: data.id,
+          resume_url: appData.resume_url || payload.resume_path,
           created_at: data.created_at || now,
           updated_at: data.updated_at || now,
           job_title: memoryJobs.find(j => j.id === validJobId || j.id === appData.job_id)?.title || 'Engineering Role'
@@ -514,6 +516,7 @@ export async function submitApplication(appData: {
     cover_note: appData.cover_note,
     resume_path: appData.resume_path,
     resume_filename: appData.resume_filename,
+    resume_url: appData.resume_url || appData.resume_path,
     status: 'submitted',
     created_at: now,
     updated_at: now,
@@ -538,10 +541,22 @@ export async function getApplications(): Promise<Application[]> {
         .select('*, jobs:jobs(title)')
         .order('created_at', { ascending: false });
       if (!error && data && data.length > 0) {
-        return (data as any[]).map((a: any) => ({
-          ...a,
-          job_title: a.jobs?.title || 'Engineering Position'
-        })) as Application[];
+        return (data as any[]).map((a: any) => {
+          let resumeUrl = a.resume_url || a.resume_path || '';
+          if (supabase && a.resume_path && !a.resume_path.startsWith('http') && !a.resume_path.startsWith('data:') && !a.resume_path.startsWith('/uploads/')) {
+            try {
+              const { data: pubData } = supabase.storage.from('resumes').getPublicUrl(a.resume_path);
+              if (pubData?.publicUrl) resumeUrl = pubData.publicUrl;
+            } catch (err) {
+              // fallback
+            }
+          }
+          return {
+            ...a,
+            resume_url: resumeUrl || a.resume_path,
+            job_title: a.jobs?.title || 'Engineering Position'
+          };
+        }) as Application[];
       }
     } catch (e) {
       console.warn('Supabase getApplications notice:', e);

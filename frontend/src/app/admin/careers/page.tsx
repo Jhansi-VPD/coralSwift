@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Plus, Edit2, Trash2, Users, Briefcase, FileText, CheckCircle, ExternalLink, Mail, Phone, Globe } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Briefcase, FileText, CheckCircle, ExternalLink, Mail, Phone, Globe, Eye, Download } from 'lucide-react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { JobEditorModal } from '@/components/forms/JobEditorModal';
+import { ResumePreviewModal, downloadResumeFile } from '@/components/forms/ResumePreviewModal';
 import { getJobs, getApplications, deleteJob, updateApplicationStatus } from '@/lib/api';
 import { Job, Application } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
@@ -19,6 +20,7 @@ function AdminCareersPageContent() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewingResumeApp, setViewingResumeApp] = useState<Application | null>(null);
 
   useEffect(() => {
     if (tabParam === 'applications') {
@@ -225,21 +227,46 @@ function AdminCareersPageContent() {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs font-mono text-slate-500">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-slate-400" />
-                      <span>Resume File: <strong>{app.resume_filename}</strong></span>
+                  {/* Candidate Resume Action Card */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50/90 border border-slate-200">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-coral-50 border border-coral-200 flex items-center justify-center text-coral-600 shrink-0">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-mono font-bold text-slate-900 truncate">
+                            {app.resume_filename}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-mono text-slate-600 font-semibold uppercase">
+                            {app.resume_filename.split('.').pop() || 'PDF'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+                          Candidate attached resume file • Visible &amp; downloadable by Admin
+                        </p>
+                      </div>
                     </div>
-                    {app.resume_url && (
-                      <a
-                        href={app.resume_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3 py-1 rounded-lg bg-coral-50 text-coral-700 hover:bg-coral-100 border border-coral-200 font-semibold transition-colors"
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <button
+                        onClick={() => setViewingResumeApp(app)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold shadow-2xs hover:border-slate-400 transition-colors"
+                        title="Preview Candidate Resume"
                       >
-                        Download CV
-                      </a>
-                    )}
+                        <Eye className="w-3.5 h-3.5 text-coral-600" />
+                        <span>Preview Resume</span>
+                      </button>
+
+                      <button
+                        onClick={() => downloadResumeFile(app)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-coral-50 text-coral-700 hover:bg-coral-100 border border-coral-200 text-xs font-semibold transition-colors"
+                        title="Download CV"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download CV</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -253,6 +280,12 @@ function AdminCareersPageContent() {
         onClose={() => setIsModalOpen(false)}
         job={selectedJob}
         onSaved={loadData}
+      />
+
+      <ResumePreviewModal
+        isOpen={!!viewingResumeApp}
+        onClose={() => setViewingResumeApp(null)}
+        application={viewingResumeApp}
       />
     </div>
   );

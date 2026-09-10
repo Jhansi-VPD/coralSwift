@@ -72,7 +72,21 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
     setIsLoading(true);
     try {
       const filename = resumeFile ? resumeFile.name : 'candidate_resume.pdf';
-      const resumePath = `/uploads/resumes/${Date.now()}_${filename}`;
+      let resumeDataUrl = '';
+      if (resumeFile) {
+        try {
+          resumeDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string) || '');
+            reader.onerror = () => resolve('');
+            reader.readAsDataURL(resumeFile);
+          });
+        } catch (e) {
+          console.warn('File reading fallback:', e);
+        }
+      }
+
+      const resumePath = resumeDataUrl || `/uploads/resumes/${Date.now()}_${filename}`;
 
       await submitApplication({
         job_id: job.id,
@@ -84,6 +98,7 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
         cover_note: formData.coverNote || undefined,
         resume_filename: filename,
         resume_path: resumePath,
+        resume_url: resumeDataUrl || undefined,
       });
 
       setIsSuccess(true);
