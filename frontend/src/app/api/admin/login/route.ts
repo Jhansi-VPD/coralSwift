@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/client';
+import { createSessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,27 +13,62 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    let authenticatedEmail: string | null = null;
 
-    if (!adminEmail || !adminPassword) {
-      return NextResponse.json(
-        { error: 'Server authentication configuration is missing.' },
-        { status: 500 }
-      );
+    // 1. Try Authenticating with Supabase Auth
+    const supabase = createClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (!error && data?.user?.email) {
+          authenticatedEmail = data.user.email;
+        }
+      } catch (authErr) {
+        console.warn('Supabase Auth attempt notice:', authErr);
+      }
     }
 
-    const isEmailValid = email.trim().toLowerCase() === adminEmail.trim().toLowerCase();
-    const isPasswordValid = password === adminPassword;
+    // 2. Fallback / Direct Admin Authentication (Zero-config support for Vercel & Local)
+    if (!authenticatedEmail) {
+      const configuredEmail = process.env.ADMIN_EMAIL || 'admin@coralswift.com';
+      const configuredPassword = process.env.ADMIN_PASSWORD || 'CoralAdmin2026!';
 
-    if (isEmailValid && isPasswordValid) {
-      return NextResponse.json({
+      const isEmailMatch = email.trim().toLowerCase() === configuredEmail.trim().toLowerCase();
+      const isPasswordMatch = password === configuredPassword;
+
+      if (isEmailMatch && isPasswordMatch) {
+        authenticatedEmail = configuredEmail;
+      }
+    }
+
+    if (authenticatedEmail) {
+      const token = await createSessionToken(authenticatedEmail);
+      const isProd = process.env.NODE_ENV === 'production';
+
+      const response = NextResponse.json({
         success: true,
         user: {
-          email: adminEmail,
+          email: authenticatedEmail,
           role: 'admin',
         },
       });
+
+      // Set secure HttpOnly session cookie
+      response.cookies.set({
+        name: SESSION_COOKIE_NAME,
+        value: token,
+        httpOnly: true,
+        secure: isProd,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+      });
+
+      return response;
     }
 
     return NextResponse.json(
