@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Upload, CheckCircle2, AlertCircle, FileText, Send, Briefcase } from 'lucide-react';
+import { Upload, CheckCircle2, AlertCircle, FileText, Send } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Job } from '@/lib/types';
@@ -25,51 +25,157 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
 
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   if (!job) return null;
 
+  const isValidUrl = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const validateField = (field: string, value: any): string => {
+    switch (field) {
+      case 'fullName':
+        if (!value || !value.trim()) return 'Full name is required.';
+        if (value.trim().length < 2) return 'Name must be at least 2 characters.';
+        if (!/^[a-zA-Z\s.'-]+$/.test(value.trim())) return 'Please enter a valid full name (letters only).';
+        return '';
+
+      case 'email':
+        if (!value || !value.trim()) return 'Email address is required.';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Please provide a valid email address.';
+        return '';
+
+      case 'phone':
+        if (value && value.trim()) {
+          const digits = value.replace(/\D/g, '');
+          if (digits.length < 7 || digits.length > 15) {
+            return 'Please enter a valid phone number (7–15 digits).';
+          }
+        }
+        return '';
+
+      case 'linkedinUrl':
+        if (value && value.trim() && !isValidUrl(value.trim())) {
+          return 'Please enter a valid URL (starting with https://).';
+        }
+        return '';
+
+      case 'portfolioUrl':
+        if (value && value.trim() && !isValidUrl(value.trim())) {
+          return 'Please enter a valid URL (starting with https://).';
+        }
+        return '';
+
+      case 'resume':
+        if (!resumeFile) return 'Please attach your resume or CV.';
+        return '';
+
+      default:
+        return '';
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      const validExtensions = ['.pdf', '.doc', '.docx'];
+      const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
       
-      if (!validTypes.includes(file.type) && !file.name.endsWith('.pdf') && !file.name.endsWith('.docx')) {
-        setErrors({ ...errors, resume: 'Please upload a PDF or DOCX file.' });
+      if (!validExtensions.includes(fileExt)) {
+        setErrors(prev => ({ ...prev, resume: 'Please upload a PDF or Word document (.pdf, .docx, .doc).' }));
         return;
       }
 
       if (file.size > 10 * 1024 * 1024) {
-        setErrors({ ...errors, resume: 'File size must be under 10MB.' });
+        setErrors(prev => ({ ...prev, resume: 'File size must be under 10MB.' }));
         return;
       }
 
       setResumeFile(file);
-      const newErrors = { ...errors };
-      delete newErrors.resume;
-      setErrors(newErrors);
+      setErrors(prev => {
+        const copy = { ...prev };
+        delete copy.resume;
+        return copy;
+      });
     }
   };
 
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required.';
-    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Valid email is required.';
-    }
+  const validateAll = () => {
+    const errs: Record<string, string> = {};
+    const nameErr = validateField('fullName', formData.fullName);
+    if (nameErr) errs.fullName = nameErr;
+
+    const emailErr = validateField('email', formData.email);
+    if (emailErr) errs.email = emailErr;
+
+    const phoneErr = validateField('phone', formData.phone);
+    if (phoneErr) errs.phone = phoneErr;
+
+    const linkErr = validateField('linkedinUrl', formData.linkedinUrl);
+    if (linkErr) errs.linkedinUrl = linkErr;
+
+    const portErr = validateField('portfolioUrl', formData.portfolioUrl);
+    if (portErr) errs.portfolioUrl = portErr;
+
     if (!resumeFile) {
-      newErrors.resume = 'Please attach your resume/CV (PDF or DOCX).';
+      errs.resume = 'Please attach your resume/CV document (PDF or DOCX).';
     }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    setErrors(errs);
+    setTouched({
+      fullName: true,
+      email: true,
+      phone: true,
+      linkedinUrl: true,
+      portfolioUrl: true,
+      resume: true,
+    });
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const err = validateField(field, (formData as any)[field]);
+    setErrors(prev => {
+      const copy = { ...prev };
+      if (err) copy[field] = err;
+      else delete copy[field];
+      return copy;
+    });
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (touched[field]) {
+      const err = validateField(field, value);
+      setErrors(prev => {
+        const copy = { ...prev };
+        if (err) copy[field] = err;
+        else delete copy[field];
+        return copy;
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validateAll()) return;
 
     setIsLoading(true);
+    setErrors(prev => {
+      const copy = { ...prev };
+      delete copy.form;
+      return copy;
+    });
+
     try {
       const filename = resumeFile ? resumeFile.name : 'candidate_resume.pdf';
       let resumeDataUrl = '';
@@ -90,12 +196,12 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
 
       await submitApplication({
         job_id: job.id,
-        full_name: formData.fullName,
-        email: formData.email,
-        phone: formData.phone || undefined,
-        portfolio_url: formData.portfolioUrl || undefined,
-        linkedin_url: formData.linkedinUrl || undefined,
-        cover_note: formData.coverNote || undefined,
+        full_name: formData.fullName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || undefined,
+        portfolio_url: formData.portfolioUrl.trim() || undefined,
+        linkedin_url: formData.linkedinUrl.trim() || undefined,
+        cover_note: formData.coverNote.trim() || undefined,
         resume_filename: filename,
         resume_path: resumePath,
         resume_url: resumeDataUrl || undefined,
@@ -103,7 +209,10 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
 
       setIsSuccess(true);
     } catch (err: any) {
-      setErrors({ form: err.message || 'Failed to submit application. Please try again.' });
+      setErrors(prev => ({
+        ...prev,
+        form: err.message || 'Failed to submit application. Please try again.',
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -121,6 +230,7 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
     });
     setResumeFile(null);
     setErrors({});
+    setTouched({});
     onClose();
   };
 
@@ -148,9 +258,9 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
           </Button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4 pt-2">
           {errors.form && (
-            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2.5 text-red-700 text-xs font-medium">
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2.5 text-red-700 text-xs font-medium animate-in fade-in">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
               <span>{errors.form}</span>
             </div>
@@ -164,11 +274,21 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
               <input
                 type="text"
                 value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                onChange={(e) => handleChange('fullName', e.target.value)}
+                onBlur={() => handleBlur('fullName')}
                 placeholder="Eleanor Vance"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 transition-colors shadow-sm"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 transition-colors shadow-sm ${
+                  touched.fullName && errors.fullName
+                    ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
+                    : 'border-slate-300 focus:ring-coral-500 focus:border-coral-500'
+                }`}
               />
-              {errors.fullName && <p className="text-xs text-red-600 mt-1 font-medium">{errors.fullName}</p>}
+              {touched.fullName && errors.fullName && (
+                <p className="text-xs text-red-600 mt-1 font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.fullName}</span>
+                </p>
+              )}
             </div>
 
             <div>
@@ -178,26 +298,47 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => handleChange('email', e.target.value)}
+                onBlur={() => handleBlur('email')}
                 placeholder="eleanor@domain.com"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 transition-colors shadow-sm"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 transition-colors shadow-sm ${
+                  touched.email && errors.email
+                    ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
+                    : 'border-slate-300 focus:ring-coral-500 focus:border-coral-500'
+                }`}
               />
-              {errors.email && <p className="text-xs text-red-600 mt-1 font-medium">{errors.email}</p>}
+              {touched.email && errors.email && (
+                <p className="text-xs text-red-600 mt-1 font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.email}</span>
+                </p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono font-bold uppercase text-slate-700 mb-1.5">
-                Phone Number
+                Phone Number (Optional)
               </label>
               <input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => handleChange('phone', e.target.value)}
+                onBlur={() => handleBlur('phone')}
                 placeholder="+1 (555) 000-0000"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 transition-colors shadow-sm"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 transition-colors shadow-sm ${
+                  touched.phone && errors.phone
+                    ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
+                    : 'border-slate-300 focus:ring-coral-500 focus:border-coral-500'
+                }`}
               />
+              {touched.phone && errors.phone && (
+                <p className="text-xs text-red-600 mt-1 font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.phone}</span>
+                </p>
+              )}
             </div>
 
             <div>
@@ -207,10 +348,21 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
               <input
                 type="url"
                 value={formData.linkedinUrl}
-                onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
+                onChange={(e) => handleChange('linkedinUrl', e.target.value)}
+                onBlur={() => handleBlur('linkedinUrl')}
                 placeholder="https://linkedin.com/in/username"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 transition-colors shadow-sm"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 transition-colors shadow-sm ${
+                  touched.linkedinUrl && errors.linkedinUrl
+                    ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
+                    : 'border-slate-300 focus:ring-coral-500 focus:border-coral-500'
+                }`}
               />
+              {touched.linkedinUrl && errors.linkedinUrl && (
+                <p className="text-xs text-red-600 mt-1 font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.linkedinUrl}</span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -221,10 +373,21 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
             <input
               type="url"
               value={formData.portfolioUrl}
-              onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+              onChange={(e) => handleChange('portfolioUrl', e.target.value)}
+              onBlur={() => handleBlur('portfolioUrl')}
               placeholder="https://github.com/username or personal site"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 transition-colors shadow-sm"
+              className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 transition-colors shadow-sm ${
+                touched.portfolioUrl && errors.portfolioUrl
+                  ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
+                  : 'border-slate-300 focus:ring-coral-500 focus:border-coral-500'
+              }`}
             />
+            {touched.portfolioUrl && errors.portfolioUrl && (
+              <p className="text-xs text-red-600 mt-1 font-medium flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>{errors.portfolioUrl}</span>
+              </p>
+            )}
           </div>
 
           {/* Resume Upload Drag/Select */}
@@ -232,7 +395,11 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
             <label className="block text-xs font-mono font-bold uppercase text-slate-700 mb-1.5">
               Resume / CV (PDF or DOCX) <span className="text-coral-600">*</span>
             </label>
-            <div className="border-2 border-dashed border-slate-300 hover:border-coral-500 rounded-2xl p-5 text-center transition-colors bg-slate-50/80 hover:bg-coral-50/20">
+            <div className={`border-2 border-dashed rounded-2xl p-5 text-center transition-colors ${
+              errors.resume
+                ? 'border-red-400 bg-red-50/20'
+                : 'border-slate-300 hover:border-coral-500 bg-slate-50/80 hover:bg-coral-50/20'
+            }`}>
               <input
                 type="file"
                 id="resume-upload"
@@ -259,18 +426,23 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
                 )}
               </label>
             </div>
-            {errors.resume && <p className="text-xs text-red-600 mt-1 font-medium">{errors.resume}</p>}
+            {errors.resume && (
+              <p className="text-xs text-red-600 mt-1 font-medium flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>{errors.resume}</span>
+              </p>
+            )}
           </div>
 
           {/* Cover Note */}
           <div>
             <label className="block text-xs font-mono font-bold uppercase text-slate-700 mb-1.5">
-              Cover Note / Why CoralSwift?
+              Cover Note / Why CoralSwift? (Optional)
             </label>
             <textarea
               rows={3}
               value={formData.coverNote}
-              onChange={(e) => setFormData({ ...formData, coverNote: e.target.value })}
+              onChange={(e) => handleChange('coverNote', e.target.value)}
               placeholder="Briefly highlight relevant systems architecture projects or achievements..."
               className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 transition-colors shadow-sm"
             />

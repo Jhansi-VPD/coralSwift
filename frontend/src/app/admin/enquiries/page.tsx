@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, Building2, Clock, CheckCircle2, MessageSquare, Filter } from 'lucide-react';
+import { Mail, Phone, Building2, Clock, CheckCircle2, MessageSquare, Filter, Trash2, AlertCircle } from 'lucide-react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { getEnquiries, updateEnquiryStatus } from '@/lib/api';
+import { getEnquiries, updateEnquiryStatus, deleteEnquiry } from '@/lib/api';
 import { Enquiry } from '@/lib/types';
 import { formatDate, formatTimeAgo } from '@/lib/utils';
 
@@ -14,6 +14,7 @@ export default function AdminEnquiriesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadData = async () => {
     const data = await getEnquiries();
@@ -37,6 +38,25 @@ export default function AdminEnquiriesPage() {
     await updateEnquiryStatus(id, selectedEnquiry.status, adminNotes);
     loadData();
     alert('Internal notes updated.');
+  };
+
+  const handleDeleteEnquiry = async (id: string, clientName?: string) => {
+    if (confirm(`Are you sure you want to permanently delete the consultation enquiry from "${clientName || 'this client'}"?`)) {
+      setIsDeleting(true);
+      try {
+        await deleteEnquiry(id);
+        if (selectedEnquiry?.id === id) {
+          setSelectedEnquiry(null);
+          setAdminNotes('');
+        }
+        await loadData();
+      } catch (err) {
+        console.error('Failed to delete enquiry:', err);
+        alert('Failed to delete enquiry. Please try again.');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
   };
 
   const filtered = statusFilter === 'all' 
@@ -83,7 +103,7 @@ export default function AdminEnquiriesPage() {
                     setSelectedEnquiry(enq);
                     setAdminNotes(enq.admin_notes || '');
                   }}
-                  className={`bg-white rounded-3xl p-6 border transition-all cursor-pointer shadow-sm ${
+                  className={`bg-white rounded-3xl p-6 border transition-all cursor-pointer shadow-sm relative group ${
                     selectedEnquiry?.id === enq.id
                       ? 'border-coral-500 ring-2 ring-coral-500/20 shadow-md'
                       : 'border-slate-200 hover:border-slate-300'
@@ -94,12 +114,25 @@ export default function AdminEnquiriesPage() {
                       <div className="text-base font-bold text-[#0B1426] font-display">{enq.full_name}</div>
                       <div className="text-xs text-slate-500 font-mono font-medium">{enq.company}</div>
                     </div>
-                    <Badge
-                      variant={enq.status === 'new' ? 'emerald' : enq.status === 'in_review' ? 'amber' : 'slate'}
-                      size="sm"
-                    >
-                      {enq.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={enq.status === 'new' ? 'emerald' : enq.status === 'in_review' ? 'amber' : 'slate'}
+                        size="sm"
+                      >
+                        {enq.status}
+                      </Badge>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteEnquiry(enq.id, enq.full_name);
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-80 group-hover:opacity-100 transition-all"
+                        title="Delete enquiry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-xs text-slate-600 line-clamp-2 mb-3">
@@ -178,11 +211,21 @@ export default function AdminEnquiriesPage() {
                     placeholder="Log discovery call schedule, NDA status, or assigned lead..."
                     className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:bg-white"
                   />
-                  <div className="mt-2 flex justify-end">
-                    <Button variant="secondary" size="sm" onClick={() => handleSaveNotes(selectedEnquiry.id)}>
-                      Save Notes
-                    </Button>
-                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteEnquiry(selectedEnquiry.id, selectedEnquiry.full_name)}
+                    disabled={isDeleting}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-xl transition-colors border border-transparent hover:border-red-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Enquiry</span>
+                  </button>
+                  <Button variant="secondary" size="sm" onClick={() => handleSaveNotes(selectedEnquiry.id)}>
+                    Save Notes
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -197,3 +240,4 @@ export default function AdminEnquiriesPage() {
     </div>
   );
 }
+

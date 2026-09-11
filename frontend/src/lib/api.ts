@@ -645,6 +645,23 @@ export async function updateApplicationStatus(id: string, status: Application['s
   return true;
 }
 
+export async function deleteApplication(id: string): Promise<boolean> {
+  const supabase = createClient();
+  if (supabase && isValidUUID(id)) {
+    try {
+      await supabase.from('applications').delete().eq('id', id);
+    } catch (e) {
+      console.warn('Supabase deleteApplication notice:', e);
+    }
+  }
+  const index = memoryApplications.findIndex(a => a.id === id);
+  if (index !== -1) {
+    memoryApplications.splice(index, 1);
+  }
+  logAuditAction('DELETE_APPLICATION', 'applications', id, { id });
+  return true;
+}
+
 // ==============================================================================
 // 4. CASE STUDIES API
 // ==============================================================================
@@ -976,6 +993,23 @@ export async function updateEnquiryStatus(id: string, status: Enquiry['status'],
     enq.updated_at = now;
   }
   logAuditAction('UPDATE_ENQUIRY_STATUS', 'enquiries', id, { status, notes });
+  return true;
+}
+
+export async function deleteEnquiry(id: string): Promise<boolean> {
+  const supabase = createClient();
+  if (supabase && isValidUUID(id)) {
+    try {
+      await supabase.from('enquiries').delete().eq('id', id);
+    } catch (e) {
+      console.warn('Supabase deleteEnquiry notice:', e);
+    }
+  }
+  const index = memoryEnquiries.findIndex(e => e.id === id);
+  if (index !== -1) {
+    memoryEnquiries.splice(index, 1);
+  }
+  logAuditAction('DELETE_ENQUIRY', 'enquiries', id, { id });
   return true;
 }
 
