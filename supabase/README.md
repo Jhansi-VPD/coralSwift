@@ -39,9 +39,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 # Private Supabase Service Role Key (Server-side operations only)
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 
-# Admin Default Credentials for initial dashboard access
-NEXT_PUBLIC_ADMIN_EMAIL=admin@coralswift.com
-NEXT_PUBLIC_ADMIN_PASSWORD=CoralAdmin2026!
+# Admin Default Credentials (Server-side operations only)
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=your-secure-admin-password
 ```
 
 ---

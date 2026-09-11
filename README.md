@@ -35,8 +35,7 @@ The frontend application runs on `http://localhost:3000` (or next available port
 
 ### Admin Portal
 - URL: `http://localhost:3000/admin/login`
-- Email: `admin@coralswift.com`
-- Password: `CoralAdmin2026!`
+- Configure `ADMIN_EMAIL` and `ADMIN_PASSWORD` in your server `.env` file.
 
 ### Database & Supabase
 - Migrations: `supabase/migrations/`

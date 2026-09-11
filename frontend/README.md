@@ -15,7 +15,7 @@
   - **Case Studies Showcase (`/case-studies/[slug]`)**: Client context, Challenge, Engineered Solution, Implementation details, and Verified Production Outcome Metrics (e.g. 42,000+ TPS, 99.999% uptime, <30s RTO).
   - **Contact Us (`/contact`)**: Multi-field enterprise consultation form with server-side validation, anti-abuse controls, consent capturing, and status pipeline tracking.
   - **Administration Portal (`/admin`)**:
-    - Protected session authentication (`admin@coralswift.com` / `CoralAdmin2026!`).
+    - Protected session authentication (Configurable via server environment variables).
     - Executive overview dashboard with live KPIs.
     - Services CRUD manager.
     - Careers & Candidate Applications review pipeline with resume tracking.
@@ -46,8 +46,8 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-secret-key
 
-NEXT_PUBLIC_ADMIN_EMAIL=admin@coralswift.com
-NEXT_PUBLIC_ADMIN_PASSWORD=CoralAdmin2026!
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=your-secure-admin-password
 ```
 
 > **Note**: The application includes a zero-config fallback layer pre-seeded with all baseline enterprise data, allowing immediate local development and verification even before Supabase keys are provided.

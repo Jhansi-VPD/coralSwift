@@ -19,22 +19,32 @@ export default function AdminLoginPage() {
     setIsLoading(true);
     setError('');
 
-    // Default admin credentials configured in PRD
-    if (
-      (email.trim().toLowerCase() === 'admin@coralswift.com' && password === 'CoralAdmin2026!') ||
-      (email.includes('@') && password.length >= 6)
-    ) {
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setIsLoading(false);
+        setError(data.error || 'Invalid email or password. Please try again.');
+        return;
+      }
+
       if (typeof window !== 'undefined') {
         localStorage.setItem('coralswift_admin_auth', 'true');
-        localStorage.setItem('coralswift_admin_email', email);
+        localStorage.setItem('coralswift_admin_email', data.user?.email || email);
       }
       logAuditAction('ADMIN_LOGIN_SUCCESS', 'AUTH', 'usr_admin', { email, method: 'password' });
       setTimeout(() => {
         router.push('/admin');
       }, 500);
-    } else {
+    } catch (err: any) {
       setIsLoading(false);
-      setError('Invalid email or password. Please try again.');
+      setError('Unable to authenticate. Please check your network connection.');
     }
   };
 
