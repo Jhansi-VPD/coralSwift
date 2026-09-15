@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useConsultation } from '@/components/ui/ConsultationContext';
 import { CaseStudy } from '@/lib/types';
+import { mapToServiceOption } from '@/lib/utils';
 import { generateCaseStudyPDF } from '@/lib/case-study-pdf';
 
 interface CaseStudyDetailClientProps {
@@ -30,6 +31,8 @@ export function CaseStudyDetailClient({ study }: CaseStudyDetailClientProps) {
   const { openConsultation } = useConsultation();
   const [copied, setCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const matchedService = mapToServiceOption(study.related_service_slug) || mapToServiceOption(study.industry) || 'General Enterprise Consultation';
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {
@@ -201,7 +204,7 @@ export function CaseStudyDetailClient({ study }: CaseStudyDetailClientProps) {
                 variant="primary" 
                 size="md" 
                 className="w-full text-xs font-semibold"
-                onClick={() => openConsultation(study.industry)}
+                onClick={() => openConsultation(matchedService)}
               >
                 <span>Start a Technical Discussion</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1.5" />

@@ -9,6 +9,8 @@ export interface ModalProps {
   description?: string;
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
+  id?: string;
+  'data-testid'?: string;
 }
 
 export function Modal({
@@ -17,7 +19,9 @@ export function Modal({
   title,
   description,
   children,
-  maxWidth = 'lg'
+  maxWidth = 'lg',
+  id = 'modal-overlay',
+  'data-testid': testId = 'modal-overlay',
 }: ModalProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,27 +49,47 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+    <div
+      id={id}
+      data-testid={testId}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      aria-describedby={description ? 'modal-description' : undefined}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-overlay"
+    >
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-[#0B1426]/75 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+        id="modal-backdrop"
+        data-testid="modal-backdrop"
+        className="fixed inset-0 bg-[#0B1426]/75 backdrop-blur-md transition-opacity animate-in fade-in duration-200 modal-backdrop"
         onClick={onClose}
       />
 
       {/* Modal Dialog */}
-      <div className={cn(
-        'relative w-full bg-white text-slate-900 border border-slate-200/90 rounded-3xl shadow-2xl p-6 sm:p-8 z-10 max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200',
-        maxWidths[maxWidth]
-      )}>
+      <div 
+        id="modal-content"
+        data-testid="modal-content"
+        className={cn(
+          'relative w-full bg-white text-slate-900 border border-slate-200/90 rounded-3xl shadow-2xl p-6 sm:p-8 z-10 max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 modal-container modal-dialog',
+          maxWidths[maxWidth]
+        )}
+      >
         {/* Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-slate-200">
+        <div className="flex items-start justify-between pb-4 border-b border-slate-200 modal-header">
           <div>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-[#0B1426] font-display">{title}</h3>
+            <h3 id="modal-title" data-testid="modal-title" className="text-xl sm:text-2xl font-extrabold text-[#0B1426] font-display">
+              {title}
+            </h3>
             {description && (
-              <p className="mt-1 text-xs sm:text-sm text-slate-600 font-medium">{description}</p>
+              <p id="modal-description" data-testid="modal-description" className="mt-1 text-xs sm:text-sm text-slate-600 font-medium">
+                {description}
+              </p>
             )}
           </div>
           <button
+            id="modal-close-btn"
+            data-testid="modal-close-btn"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-800 p-2 rounded-xl hover:bg-slate-100 transition-colors ml-4 shrink-0"
             aria-label="Close modal"
@@ -75,10 +99,11 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto mt-4 pr-1 text-slate-800">
+        <div data-testid="modal-body" className="overflow-y-auto mt-4 pr-1 text-slate-800 modal-body">
           {children}
         </div>
       </div>
     </div>
   );
 }
+

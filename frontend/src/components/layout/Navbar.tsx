@@ -82,7 +82,13 @@ export function Navbar() {
 
           {/* Right Action Buttons */}
           <div className="hidden lg:flex items-center gap-3">
-            <Button variant="primary" size="sm" onClick={() => openConsultation()}>
+            <Button 
+              id="nav-consultation-btn"
+              data-testid="nav-consultation-btn"
+              variant="primary" 
+              size="sm" 
+              onClick={() => openConsultation()}
+            >
               <span>Book Consultation</span>
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -90,12 +96,19 @@ export function Navbar() {
 
           {/* Mobile Menu Toggle */}
           <div className="flex md:hidden items-center gap-2">
-            <Button variant="primary" size="sm" className="text-xs px-3" onClick={() => openConsultation()}>
+            <Button 
+              id="mobile-nav-consult-btn"
+              data-testid="mobile-nav-consult-btn"
+              variant="primary" 
+              size="sm" 
+              className="text-xs px-3.5 min-h-[44px] min-w-[44px] flex items-center justify-center font-semibold" 
+              onClick={() => openConsultation()}
+            >
               Consult
             </Button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-700 hover:text-slate-950 rounded-lg hover:bg-slate-100 transition-colors"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2.5 text-slate-700 hover:text-slate-950 rounded-xl hover:bg-slate-100 transition-colors"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -113,7 +126,7 @@ export function Navbar() {
                 key={link.name}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between p-3 rounded-xl text-base font-medium text-slate-800 hover:text-brand-600 hover:bg-slate-50 border border-transparent hover:border-slate-200"
+                className="flex items-center justify-between p-3.5 min-h-[44px] rounded-xl text-base font-medium text-slate-800 hover:text-brand-600 hover:bg-slate-50 border border-transparent hover:border-slate-200"
               >
                 <span>{link.name}</span>
                 {link.badge ? (
@@ -128,7 +141,8 @@ export function Navbar() {
             <div className="pt-4 mt-2 border-t border-slate-200 flex flex-col gap-3">
               <Button 
                 variant="primary" 
-                className="w-full"
+                size="lg"
+                className="w-full min-h-[44px] text-sm font-semibold"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   openConsultation();

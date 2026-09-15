@@ -35,10 +35,13 @@ export function CTASection() {
 
             <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button 
+                id="cta-section-consultation-btn"
+                data-testid="cta-consultation-btn"
                 variant="primary" 
                 size="lg" 
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto consultation-cta-btn"
                 onClick={() => openConsultation()}
+                aria-label="Start Technical Consultation"
               >
                 <span>Start Technical Consultation</span>
                 <ArrowRight className="w-4 h-4 ml-1" />

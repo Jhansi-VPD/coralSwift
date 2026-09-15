@@ -4,16 +4,7 @@ import React, { useState } from 'react';
 import { Send, CheckCircle2, AlertCircle, Lock, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { submitEnquiry } from '@/lib/api';
-
-const SERVICE_OPTIONS = [
-  'Cloud Architecture & Modernization',
-  'AI & Applied Machine Learning Solutions',
-  'Enterprise DevSecOps & Platform Engineering',
-  'Distributed Systems & High-Throughput Microservices',
-  'Enterprise Data Engineering & Real-time Analytics',
-  'Cybersecurity & Zero-Trust Architecture',
-  'General Enterprise Consultation'
-];
+import { SERVICE_OPTIONS, mapToServiceOption } from '@/lib/utils';
 
 interface ContactFormProps {
   initialService?: string;
@@ -21,12 +12,13 @@ interface ContactFormProps {
 }
 
 export function ContactForm({ initialService = '', sourcePage = '/contact' }: ContactFormProps) {
+  const resolvedService = mapToServiceOption(initialService);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     company: '',
     phone: '',
-    serviceInterest: initialService || '',
+    serviceInterest: resolvedService,
     message: '',
     consent: true,
   });
@@ -51,7 +43,7 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
         return '';
 
       case 'company':
-        if (!value || !value.trim()) return 'Company or organization name is required.';
+        if (!value || !value.trim()) return 'Company name is required.';
         if (value.trim().length < 2) return 'Company name must be at least 2 characters.';
         if (!/[a-zA-Z]/.test(value.trim())) return 'Please enter a valid company name (cannot be numbers only).';
         if (!/^[a-zA-Z0-9\s.,&'()/-]+$/.test(value.trim())) return 'Company name contains invalid characters.';
@@ -67,12 +59,12 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
         return '';
 
       case 'serviceInterest':
-        if (!value || !value.trim()) return 'Please select an area of interest.';
+        if (!value || !value.trim()) return 'Area of interest is required. Please select a service.';
         if (!SERVICE_OPTIONS.includes(value)) return 'Please select a valid area of interest.';
         return '';
 
       case 'message':
-        if (!value || !value.trim()) return 'Project requirements or context is required.';
+        if (!value || !value.trim()) return 'Project requirements or message is required.';
         if (value.trim().length < 10) return 'Please provide more detail (minimum 10 characters).';
         if (value.trim().length > 5000) return 'Message cannot exceed 5000 characters.';
         return '';
@@ -132,7 +124,14 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateAll()) return;
+    const isValid = validateAll();
+    if (!isValid) {
+      setErrors((prev) => ({
+        ...prev,
+        form: 'Please fill in all required fields and correct the validation errors below.',
+      }));
+      return;
+    }
 
     setIsLoading(true);
     setErrors((prev) => {
@@ -169,7 +168,7 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
 
   if (isSuccess) {
     return (
-      <div className="bg-white rounded-3xl p-8 sm:p-12 border border-emerald-200 shadow-xl text-center animate-in fade-in">
+      <div className="bg-white rounded-3xl p-8 sm:p-12 border border-emerald-200 shadow-xl text-center animate-in fade-in" data-testid="contact-success-card">
         <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 className="w-8 h-8 text-emerald-600" />
         </div>
@@ -186,6 +185,7 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
         <Button
           variant="secondary"
           size="sm"
+          data-testid="submit-another-btn"
           onClick={() => {
             setIsSuccess(false);
             setFormData({
@@ -208,7 +208,14 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="bg-white rounded-3xl p-7 sm:p-10 border border-slate-200/90 shadow-xl">
+    <form
+      id="contact-form"
+      name="contactForm"
+      data-testid="contact-form"
+      onSubmit={handleSubmit}
+      noValidate
+      className="bg-white rounded-3xl p-7 sm:p-10 border border-slate-200/90 shadow-xl"
+    >
       <h3 className="text-2xl font-extrabold text-[#0B1426] mb-2 font-display">
         Start an Architecture Consultation
       </h3>
@@ -217,7 +224,13 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
       </p>
 
       {errors.form && (
-        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3 text-red-600 text-sm animate-in fade-in">
+        <div
+          id="form-error"
+          data-testid="form-error"
+          role="alert"
+          aria-live="assertive"
+          className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3 text-red-600 text-sm animate-in fade-in error-banner error-message"
+        >
           <AlertCircle className="w-5 h-5 shrink-0" />
           <span>{errors.form}</span>
         </div>
@@ -226,15 +239,20 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
         {/* Full Name */}
         <div>
-          <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-2">
+          <label htmlFor="fullName" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-2">
             Full Name <span className="text-coral-500">*</span>
           </label>
           <input
+            id="fullName"
+            name="fullName"
             type="text"
             placeholder="e.g. Eleanor Vance"
             value={formData.fullName}
             onChange={(e) => handleChange('fullName', e.target.value)}
             onBlur={() => handleBlur('fullName')}
+            aria-invalid={touched.fullName && !!errors.fullName}
+            aria-describedby={touched.fullName && errors.fullName ? 'fullName-error' : undefined}
+            data-testid="fullName-input"
             className={`w-full px-4 py-3 rounded-xl bg-slate-50 border text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors ${
               touched.fullName && errors.fullName
                 ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
@@ -242,7 +260,13 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
             }`}
           />
           {touched.fullName && errors.fullName && (
-            <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+            <p
+              id="fullName-error"
+              data-testid="fullName-error"
+              role="alert"
+              aria-live="polite"
+              className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1 error-message field-error"
+            >
               <AlertCircle className="w-3 h-3 shrink-0" />
               <span>{errors.fullName}</span>
             </p>
@@ -251,15 +275,20 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
 
         {/* Corporate Email */}
         <div>
-          <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-2">
+          <label htmlFor="email" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-2">
             Work Email <span className="text-coral-500">*</span>
           </label>
           <input
+            id="email"
+            name="email"
             type="email"
             placeholder="name@company.com"
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
             onBlur={() => handleBlur('email')}
+            aria-invalid={touched.email && !!errors.email}
+            aria-describedby={touched.email && errors.email ? 'email-error' : undefined}
+            data-testid="email-input"
             className={`w-full px-4 py-3 rounded-xl bg-slate-50 border text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors ${
               touched.email && errors.email
                 ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
@@ -267,7 +296,13 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
             }`}
           />
           {touched.email && errors.email && (
-            <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+            <p
+              id="email-error"
+              data-testid="email-error"
+              role="alert"
+              aria-live="polite"
+              className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1 error-message field-error"
+            >
               <AlertCircle className="w-3 h-3 shrink-0" />
               <span>{errors.email}</span>
             </p>
@@ -278,15 +313,20 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
         {/* Company Name */}
         <div>
-          <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-2">
+          <label htmlFor="company" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-2">
             Company Name <span className="text-coral-500">*</span>
           </label>
           <input
+            id="company"
+            name="company"
             type="text"
             placeholder="e.g. Apex Global Corp"
             value={formData.company}
             onChange={(e) => handleChange('company', e.target.value)}
             onBlur={() => handleBlur('company')}
+            aria-invalid={touched.company && !!errors.company}
+            aria-describedby={touched.company && errors.company ? 'company-error' : undefined}
+            data-testid="company-input"
             className={`w-full px-4 py-3 rounded-xl bg-slate-50 border text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors ${
               touched.company && errors.company
                 ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
@@ -294,7 +334,13 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
             }`}
           />
           {touched.company && errors.company && (
-            <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+            <p
+              id="company-error"
+              data-testid="company-error"
+              role="alert"
+              aria-live="polite"
+              className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1 error-message field-error"
+            >
               <AlertCircle className="w-3 h-3 shrink-0" />
               <span>{errors.company}</span>
             </p>
@@ -303,15 +349,20 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
 
         {/* Phone Number (Optional) */}
         <div>
-          <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-2">
+          <label htmlFor="phone" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-2">
             Phone Number <span className="text-slate-400 font-normal">(Optional)</span>
           </label>
           <input
+            id="phone"
+            name="phone"
             type="tel"
             placeholder="+1 (555) 000-0000"
             value={formData.phone}
             onChange={(e) => handleChange('phone', e.target.value)}
             onBlur={() => handleBlur('phone')}
+            aria-invalid={touched.phone && !!errors.phone}
+            aria-describedby={touched.phone && errors.phone ? 'phone-error' : undefined}
+            data-testid="phone-input"
             className={`w-full px-4 py-3 rounded-xl bg-slate-50 border text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors ${
               touched.phone && errors.phone
                 ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
@@ -319,7 +370,13 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
             }`}
           />
           {touched.phone && errors.phone && (
-            <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+            <p
+              id="phone-error"
+              data-testid="phone-error"
+              role="alert"
+              aria-live="polite"
+              className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1 error-message field-error"
+            >
               <AlertCircle className="w-3 h-3 shrink-0" />
               <span>{errors.phone}</span>
             </p>
@@ -329,13 +386,18 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
 
       {/* Service Interest Dropdown */}
       <div className="mb-5">
-        <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-2">
+        <label htmlFor="serviceInterest" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-2">
           Area of Interest <span className="text-coral-500">*</span>
         </label>
         <select
+          id="serviceInterest"
+          name="serviceInterest"
           value={formData.serviceInterest}
           onChange={(e) => handleChange('serviceInterest', e.target.value)}
           onBlur={() => handleBlur('serviceInterest')}
+          aria-invalid={touched.serviceInterest && !!errors.serviceInterest}
+          aria-describedby={touched.serviceInterest && errors.serviceInterest ? 'serviceInterest-error' : undefined}
+          data-testid="serviceInterest-select"
           className={`w-full px-4 py-3 rounded-xl bg-slate-50 border text-sm focus:outline-none focus:ring-2 transition-colors ${
             !formData.serviceInterest ? 'text-slate-400' : 'text-slate-900'
           } ${
@@ -354,7 +416,13 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
           ))}
         </select>
         {touched.serviceInterest && errors.serviceInterest && (
-          <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+          <p
+            id="serviceInterest-error"
+            data-testid="serviceInterest-error"
+            role="alert"
+            aria-live="polite"
+            className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1 error-message field-error"
+          >
             <AlertCircle className="w-3 h-3 shrink-0" />
             <span>{errors.serviceInterest}</span>
           </p>
@@ -364,7 +432,7 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
       {/* Message */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold">
+          <label htmlFor="message" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold">
             Project Context & Requirements <span className="text-coral-500">*</span>
           </label>
           <span className={`text-[11px] font-mono ${formData.message.length > 5000 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
@@ -372,11 +440,16 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
           </span>
         </div>
         <textarea
+          id="message"
+          name="message"
           rows={4}
           placeholder="Briefly describe your current architecture, workload profile, SLA targets, or timeline..."
           value={formData.message}
           onChange={(e) => handleChange('message', e.target.value)}
           onBlur={() => handleBlur('message')}
+          aria-invalid={touched.message && !!errors.message}
+          aria-describedby={touched.message && errors.message ? 'message-error' : undefined}
+          data-testid="message-textarea"
           className={`w-full px-4 py-3 rounded-xl bg-slate-50 border text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors resize-y ${
             touched.message && errors.message
               ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
@@ -384,7 +457,13 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
           }`}
         />
         {touched.message && errors.message && (
-          <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+          <p
+            id="message-error"
+            data-testid="message-error"
+            role="alert"
+            aria-live="polite"
+            className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1 error-message field-error"
+          >
             <AlertCircle className="w-3 h-3 shrink-0" />
             <span>{errors.message}</span>
           </p>
@@ -393,11 +472,16 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
 
       {/* Consent Checkbox */}
       <div className="mb-8">
-        <label className="flex items-start gap-3 cursor-pointer">
+        <label htmlFor="consent" className="flex items-start gap-3 cursor-pointer">
           <input
+            id="consent"
+            name="consent"
             type="checkbox"
             checked={formData.consent}
             onChange={(e) => handleChange('consent', e.target.checked)}
+            aria-invalid={touched.consent && !!errors.consent}
+            aria-describedby={touched.consent && errors.consent ? 'consent-error' : undefined}
+            data-testid="consent-checkbox"
             className="mt-1 rounded border-slate-300 text-coral-600 focus:ring-coral-500 h-4 w-4"
           />
           <span className="text-xs text-slate-600 leading-normal">
@@ -405,7 +489,13 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
           </span>
         </label>
         {touched.consent && errors.consent && (
-          <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+          <p
+            id="consent-error"
+            data-testid="consent-error"
+            role="alert"
+            aria-live="polite"
+            className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1 error-message field-error"
+          >
             <AlertCircle className="w-3 h-3 shrink-0" />
             <span>{errors.consent}</span>
           </p>
@@ -414,6 +504,8 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
 
       {/* Submit Button */}
       <Button
+        id="submit-button"
+        data-testid="submit-button"
         type="submit"
         variant="primary"
         size="lg"
@@ -431,3 +523,4 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
     </form>
   );
 }
+

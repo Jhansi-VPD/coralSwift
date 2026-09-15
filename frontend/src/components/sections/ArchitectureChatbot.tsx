@@ -306,6 +306,7 @@ export function ArchitectureChatbot() {
 
           {/* Chat Input Box */}
           <form
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               handleSendMessage();

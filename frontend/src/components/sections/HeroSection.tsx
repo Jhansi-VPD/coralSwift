@@ -74,10 +74,13 @@ export function HeroSection() {
           {/* Action CTAs */}
           <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button 
+              id="hero-cta-btn"
+              data-testid="hero-consultation-cta"
               variant="primary" 
               size="lg" 
-              className="w-full sm:w-auto text-sm sm:text-base shadow-lg shadow-coral-500/15"
+              className="w-full sm:w-auto text-sm sm:text-base shadow-lg shadow-coral-500/15 consultation-cta-btn"
               onClick={() => openConsultation()}
+              aria-label="Start Architecture Consultation"
             >
               <span>Start Architecture Consultation</span>
               <ArrowRight className="w-4 h-4 ml-1" />

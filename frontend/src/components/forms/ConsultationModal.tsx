@@ -10,22 +10,13 @@ import {
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { submitEnquiry } from '@/lib/api';
+import { SERVICE_OPTIONS, mapToServiceOption } from '@/lib/utils';
 
 interface ConsultationModalProps {
   isOpen: boolean;
   onClose: () => void;
   defaultService?: string;
 }
-
-const SERVICE_OPTIONS = [
-  'Cloud Architecture & Modernization',
-  'AI & Applied Machine Learning Solutions',
-  'Enterprise DevSecOps & Platform Engineering',
-  'Distributed Systems & High-Throughput Microservices',
-  'Enterprise Data Engineering & Real-time Analytics',
-  'Cybersecurity & Zero-Trust Architecture',
-  'General Enterprise Consultation'
-];
 
 const TIME_SLOTS = [
   '10:00 AM EST (US/East)',
@@ -36,11 +27,12 @@ const TIME_SLOTS = [
 ];
 
 export function ConsultationModal({ isOpen, onClose, defaultService }: ConsultationModalProps) {
+  const resolvedService = mapToServiceOption(defaultService);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     company: '',
-    serviceInterest: defaultService || '',
+    serviceInterest: resolvedService,
     preferredTime: TIME_SLOTS[0],
     message: '',
   });
@@ -52,7 +44,7 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
 
   useEffect(() => {
     if (defaultService) {
-      setFormData(prev => ({ ...prev, serviceInterest: defaultService }));
+      setFormData(prev => ({ ...prev, serviceInterest: mapToServiceOption(defaultService) }));
     }
   }, [defaultService]);
 
@@ -76,7 +68,7 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
         if (!/^[a-zA-Z0-9\s.,&'()/-]+$/.test(value.trim())) return 'Company name contains invalid characters.';
         return '';
       case 'serviceInterest':
-        if (!value || !value.trim()) return 'Please select a service domain.';
+        if (!value || !value.trim()) return 'Area of interest / service domain is required.';
         return '';
       default:
         return '';
@@ -128,11 +120,23 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateAll()) return;
+    if (!validateAll()) {
+      setErrors(prev => ({
+        ...prev,
+        form: 'Please fill in all required fields and correct the validation errors below.'
+      }));
+      return;
+    }
 
     setIsLoading(true);
+    setErrors(prev => {
+      const copy = { ...prev };
+      delete copy.form;
+      return copy;
+    });
+
     try {
-      await submitEnquiry({
+      const response = await submitEnquiry({
         full_name: formData.fullName.trim(),
         email: formData.email.trim(),
         company: formData.company.trim(),
@@ -141,9 +145,19 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
         consent: true,
         source_page: typeof window !== 'undefined' ? window.location.pathname : '/contact',
       });
-      setIsSuccess(true);
-    } catch (err) {
-      setIsSuccess(true);
+      if (response && response.success) {
+        setIsSuccess(true);
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          form: response?.message || 'Failed to submit consultation request. Please try again.'
+        }));
+      }
+    } catch (err: any) {
+      setErrors(prev => ({
+        ...prev,
+        form: err?.message || 'An unexpected network error occurred while booking your consultation. Please try again.'
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -165,9 +179,16 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleResetAndClose} title="Book Architecture Consultation" maxWidth="xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleResetAndClose}
+      title="Book Architecture Consultation"
+      maxWidth="xl"
+      id="consultation-modal"
+      data-testid="consultation-modal"
+    >
       {isSuccess ? (
-        <div className="text-center py-8 space-y-4 animate-in fade-in">
+        <div className="text-center py-8 space-y-4 animate-in fade-in" data-testid="consultation-success-card">
           <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-600 animate-bounce">
             <CheckCircle2 className="w-8 h-8" />
           </div>
@@ -176,29 +197,47 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
             Thank you, <span className="font-semibold text-slate-900">{formData.fullName}</span>. A calendar invite for <span className="font-semibold text-slate-900">{formData.preferredTime}</span> has been dispatched to <span className="font-mono text-coral-600">{formData.email}</span> along with our architecture NDA.
           </p>
           <div className="pt-4">
-            <Button variant="primary" onClick={handleResetAndClose} className="w-full sm:w-auto">
+            <Button variant="primary" data-testid="consultation-done-btn" onClick={handleResetAndClose} className="w-full sm:w-auto">
               Done
             </Button>
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} noValidate className="space-y-4 pt-1">
+        <form id="consultation-modal-form" name="consultationModalForm" data-testid="consultation-modal-form" onSubmit={handleSubmit} noValidate className="space-y-4 pt-1">
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3 text-xs text-slate-600">
             <ShieldCheck className="w-4 h-4 text-coral-600 shrink-0" />
             <span>Direct 45-minute technical roadmap & topology review with a Principal Systems Architect.</span>
           </div>
 
+          {errors.form && (
+            <div
+              id="consultation-form-error"
+              data-testid="form-error"
+              role="alert"
+              aria-live="assertive"
+              className="p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3 text-red-600 text-xs animate-in fade-in error-banner error-message"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errors.form}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
+              <label htmlFor="modalFullName" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
                 Full Name <span className="text-coral-500">*</span>
               </label>
               <input
+                id="modalFullName"
+                name="fullName"
                 type="text"
                 value={formData.fullName}
                 onChange={(e) => handleChange('fullName', e.target.value)}
                 onBlur={() => handleBlur('fullName')}
                 placeholder="e.g. Sarah Jenkins"
+                aria-invalid={touched.fullName && !!errors.fullName}
+                aria-describedby={touched.fullName && errors.fullName ? 'modalFullName-error' : undefined}
+                data-testid="modal-fullName-input"
                 className={`w-full px-3.5 py-2.5 rounded-xl border bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 transition-colors ${
                   touched.fullName && errors.fullName
                     ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
@@ -206,7 +245,13 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
                 }`}
               />
               {touched.fullName && errors.fullName && (
-                <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
+                <p
+                  id="modalFullName-error"
+                  data-testid="modal-fullName-error"
+                  role="alert"
+                  aria-live="polite"
+                  className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium error-message field-error"
+                >
                   <AlertCircle className="w-3 h-3 shrink-0" />
                   <span>{errors.fullName}</span>
                 </p>
@@ -214,15 +259,20 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
+              <label htmlFor="modalEmail" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
                 Corporate Email <span className="text-coral-500">*</span>
               </label>
               <input
+                id="modalEmail"
+                name="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
                 onBlur={() => handleBlur('email')}
                 placeholder="sarah@enterprise.com"
+                aria-invalid={touched.email && !!errors.email}
+                aria-describedby={touched.email && errors.email ? 'modalEmail-error' : undefined}
+                data-testid="modal-email-input"
                 className={`w-full px-3.5 py-2.5 rounded-xl border bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 transition-colors ${
                   touched.email && errors.email
                     ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
@@ -230,7 +280,13 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
                 }`}
               />
               {touched.email && errors.email && (
-                <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
+                <p
+                  id="modalEmail-error"
+                  data-testid="modal-email-error"
+                  role="alert"
+                  aria-live="polite"
+                  className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium error-message field-error"
+                >
                   <AlertCircle className="w-3 h-3 shrink-0" />
                   <span>{errors.email}</span>
                 </p>
@@ -240,15 +296,20 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
+              <label htmlFor="modalCompany" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
                 Company / Organization <span className="text-coral-500">*</span>
               </label>
               <input
+                id="modalCompany"
+                name="company"
                 type="text"
                 value={formData.company}
                 onChange={(e) => handleChange('company', e.target.value)}
                 onBlur={() => handleBlur('company')}
                 placeholder="e.g. Acme Health Corp"
+                aria-invalid={touched.company && !!errors.company}
+                aria-describedby={touched.company && errors.company ? 'modalCompany-error' : undefined}
+                data-testid="modal-company-input"
                 className={`w-full px-3.5 py-2.5 rounded-xl border bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 transition-colors ${
                   touched.company && errors.company
                     ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
@@ -256,7 +317,13 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
                 }`}
               />
               {touched.company && errors.company && (
-                <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
+                <p
+                  id="modalCompany-error"
+                  data-testid="modal-company-error"
+                  role="alert"
+                  aria-live="polite"
+                  className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium error-message field-error"
+                >
                   <AlertCircle className="w-3 h-3 shrink-0" />
                   <span>{errors.company}</span>
                 </p>
@@ -264,12 +331,15 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
+              <label htmlFor="modalTimeSlot" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
                 Preferred Time Slot
               </label>
               <select
+                id="modalTimeSlot"
+                name="preferredTime"
                 value={formData.preferredTime}
                 onChange={(e) => handleChange('preferredTime', e.target.value)}
+                data-testid="modal-timeslot-select"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-500"
               >
                 {TIME_SLOTS.map((slot) => (
@@ -280,13 +350,18 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
           </div>
 
           <div>
-            <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
+            <label htmlFor="modalServiceInterest" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
               Service Domain of Interest <span className="text-coral-500">*</span>
             </label>
             <select
+              id="modalServiceInterest"
+              name="serviceInterest"
               value={formData.serviceInterest}
               onChange={(e) => handleChange('serviceInterest', e.target.value)}
               onBlur={() => handleBlur('serviceInterest')}
+              aria-invalid={touched.serviceInterest && !!errors.serviceInterest}
+              aria-describedby={touched.serviceInterest && errors.serviceInterest ? 'modalServiceInterest-error' : undefined}
+              data-testid="modal-serviceInterest-select"
               className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-colors ${
                 !formData.serviceInterest ? 'text-slate-400 bg-white' : 'text-slate-900 bg-white'
               } ${
@@ -303,7 +378,13 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
               ))}
             </select>
             {touched.serviceInterest && errors.serviceInterest && (
-              <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
+              <p
+                id="modalServiceInterest-error"
+                data-testid="modal-serviceInterest-error"
+                role="alert"
+                aria-live="polite"
+                className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium error-message field-error"
+              >
                 <AlertCircle className="w-3 h-3 shrink-0" />
                 <span>{errors.serviceInterest}</span>
               </p>
@@ -311,23 +392,26 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
           </div>
 
           <div>
-            <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
+            <label htmlFor="modalMessage" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
               Architecture Focus / Notes (Optional)
             </label>
             <textarea
+              id="modalMessage"
+              name="message"
               rows={3}
               value={formData.message}
               onChange={(e) => handleChange('message', e.target.value)}
               placeholder="Tell us about your current stack, bottlenecks, or target migration timeline..."
+              data-testid="modal-message-textarea"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-500"
             />
           </div>
 
           <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
-            <Button variant="ghost" type="button" onClick={handleResetAndClose}>
+            <Button variant="ghost" type="button" onClick={handleResetAndClose} data-testid="modal-cancel-btn">
               Cancel
             </Button>
-            <Button variant="primary" type="submit" isLoading={isLoading}>
+            <Button variant="primary" type="submit" isLoading={isLoading} data-testid="modal-submit-btn">
               <span>Confirm Consultation</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
@@ -337,3 +421,4 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
     </Modal>
   );
 }
+

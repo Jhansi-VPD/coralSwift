@@ -42,29 +42,29 @@ export function Footer() {
 
             <div className="flex items-center gap-3 mt-3">
               <a
-                href="https://linkedin.com"
+                href="https://linkedin.com/company/coralswift"
                 target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-2xs flex items-center justify-center text-slate-300 hover:text-white hover:bg-blue-600 hover:border-blue-500 transition-all"
-                aria-label="LinkedIn"
+                rel="noopener noreferrer"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-2xs flex items-center justify-center text-slate-300 hover:text-white hover:bg-blue-600 hover:border-blue-500 transition-all"
+                aria-label="CoralSwift on LinkedIn"
               >
                 <Linkedin className="w-4 h-4" />
               </a>
               <a
-                href="https://github.com"
+                href="https://github.com/coralswift"
                 target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-2xs flex items-center justify-center text-slate-300 hover:text-white hover:bg-blue-600 hover:border-blue-500 transition-all"
-                aria-label="GitHub"
+                rel="noopener noreferrer"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-2xs flex items-center justify-center text-slate-300 hover:text-white hover:bg-blue-600 hover:border-blue-500 transition-all"
+                aria-label="CoralSwift on GitHub"
               >
                 <Github className="w-4 h-4" />
               </a>
               <a
-                href="https://twitter.com"
+                href="https://x.com/coralswift"
                 target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-2xs flex items-center justify-center text-slate-300 hover:text-white hover:bg-blue-600 hover:border-blue-500 transition-all"
-                aria-label="Twitter"
+                rel="noopener noreferrer"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-2xs flex items-center justify-center text-slate-300 hover:text-white hover:bg-blue-600 hover:border-blue-500 transition-all"
+                aria-label="CoralSwift on X (Twitter)"
               >
                 <Twitter className="w-4 h-4" />
               </a>

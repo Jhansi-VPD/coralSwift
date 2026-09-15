@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 
+import { mapToServiceOption } from '@/lib/utils';
+
 export const metadata: Metadata = {
   title: 'Contact Engineering Leadership | CoralSwift',
 };
@@ -24,7 +26,7 @@ export default function ContactPage({
 }: {
   searchParams?: { service?: string };
 }) {
-  const initialService = searchParams?.service || '';
+  const initialService = mapToServiceOption(searchParams?.service);
 
   return (
     <div className="pt-28 pb-24 bg-enterprise-canvas">

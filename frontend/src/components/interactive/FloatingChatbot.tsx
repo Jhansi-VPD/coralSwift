@@ -358,6 +358,7 @@ export function FloatingChatbot() {
 
           {/* Input Box */}
           <form
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               handleSendMessage();
