@@ -34,8 +34,15 @@ export async function POST(request: NextRequest) {
 
     // 2. Fallback / Direct Admin Authentication (Zero-config support for Vercel & Local)
     if (!authenticatedEmail) {
-      const configuredEmail = process.env.ADMIN_EMAIL || 'admin@coralswift.com';
-      const configuredPassword = process.env.ADMIN_PASSWORD || 'CoralAdmin2026!';
+      const configuredEmail = process.env.ADMIN_EMAIL;
+      const configuredPassword = process.env.ADMIN_PASSWORD;
+
+      if (!configuredEmail || !configuredPassword) {
+        return NextResponse.json(
+          { error: 'Admin credentials not configured. Set ADMIN_EMAIL and ADMIN_PASSWORD environment variables.' },
+          { status: 500 }
+        );
+      }
 
       const isEmailMatch = email.trim().toLowerCase() === configuredEmail.trim().toLowerCase();
       const isPasswordMatch = password === configuredPassword;

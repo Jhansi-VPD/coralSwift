@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
-import { getCaseStudies, getAllCaseStudiesAdmin, saveCaseStudy, deleteCaseStudy } from '@/lib/api';
+import { getCaseStudies, saveCaseStudy, deleteCaseStudy } from '@/lib/api';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,8 +10,16 @@ export async function GET(request: NextRequest) {
     const featuredOnly = searchParams.get('featured') === 'true';
 
     if (mode === 'admin') {
-      const all = await getAllCaseStudiesAdmin();
-      return NextResponse.json(all);
+      const adminClient = createAdminClient();
+      if (!adminClient) {
+        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      }
+      const { data, error } = await adminClient
+        .from('case_studies')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw new Error(error.message || 'Failed to fetch case studies');
+      return NextResponse.json(data || []);
     }
 
     const caseStudies = await getCaseStudies(featuredOnly);
@@ -23,10 +32,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const adminClient = createAdminClient();
+    if (!adminClient) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
     const body = await request.json();
-    const saved = await saveCaseStudy(body);
+    const saved = await saveCaseStudy(body, adminClient);
 
-    // Revalidate public and admin routes so Server Components refresh immediately
     revalidatePath('/case-studies');
     revalidatePath('/case-studies/[slug]', 'page');
     revalidatePath('/');
@@ -40,13 +52,17 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const adminClient = createAdminClient();
+    if (!adminClient) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) {
       return NextResponse.json({ error: 'Missing case study id' }, { status: 400 });
     }
 
-    const success = await deleteCaseStudy(id);
+    const success = await deleteCaseStudy(id, adminClient);
 
     revalidatePath('/case-studies');
     revalidatePath('/case-studies/[slug]', 'page');
