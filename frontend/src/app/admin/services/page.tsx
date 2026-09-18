@@ -20,7 +20,7 @@ export default function AdminServicesPage() {
   const loadServices = async () => {
     setIsLoading(true);
     try {
-      const data = await getServices();
+      const data = await getServices(undefined, true);
       setServices(data);
     } catch (err) {
       console.error(err);

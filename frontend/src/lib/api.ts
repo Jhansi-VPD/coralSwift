@@ -38,8 +38,16 @@ function isValidUUID(str?: string | null): boolean {
 // ==============================================================================
 // 1. SERVICES API
 // ==============================================================================
-export async function getServices(status?: 'published' | 'draft' | 'archived'): Promise<Service[]> {
+export async function getServices(status?: 'published' | 'draft' | 'archived', adminMode?: boolean): Promise<Service[]> {
   if (typeof window !== 'undefined') {
+    if (adminMode) {
+      const res = await fetch('/api/services?mode=admin');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to fetch services' }));
+        throw new Error(err.error || 'Failed to fetch services');
+      }
+      return await res.json();
+    }
     try {
       const url = status ? `/api/services?status=${status}` : '/api/services';
       const res = await fetch(url);
@@ -98,33 +106,24 @@ export async function getServiceBySlug(slug: string): Promise<Service | null> {
   return memoryServices.find(s => s.slug === slug && !deletedServiceIds.has(s.id) && !deletedServiceIds.has(s.slug)) || null;
 }
 
-export async function saveService(service: Partial<Service>): Promise<Service> {
+export async function saveService(service: Partial<Service>, supabaseClient?: any): Promise<Service> {
   if (typeof window !== 'undefined') {
-    try {
-      const res = await fetch('/api/services', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(service)
-      });
-      if (res.ok) {
-        const saved = await res.json();
-        const idx = memoryServices.findIndex(s => s.id === saved.id || (saved.slug && s.slug === saved.slug));
-        if (idx !== -1) {
-          memoryServices[idx] = saved;
-        } else {
-          memoryServices.unshift(saved);
-        }
-        return saved;
-      }
-    } catch (err) {
-      console.warn('Client saveService fetch error:', err);
+    const res = await fetch('/api/services', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(service)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to save service' }));
+      throw new Error(err.error || 'Failed to save service');
     }
+    return await res.json();
   }
 
-  const supabase = createClient();
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
+
   const now = new Date().toISOString();
-  
-  // Database columns matching Supabase public.services schema
   const dbPayload: any = {
     title: service.title || 'Untitled Service',
     slug: service.slug || 'service-' + Date.now(),
@@ -139,143 +138,75 @@ export async function saveService(service: Partial<Service>): Promise<Service> {
     updated_at: now,
   };
 
-  let savedItem: Service | null = null;
-
-  if (supabase) {
-    try {
-      if (service.id && isValidUUID(service.id)) {
-        // Update by UUID
-        const { data, error } = await supabase
-          .from('services')
-          .update(dbPayload)
-          .eq('id', service.id)
-          .select()
-          .maybeSingle();
-        if (error) console.warn('Supabase update service error:', error.message || error);
-        if (!error && data) savedItem = data as Service;
-      }
-      
-      if (!savedItem && service.slug) {
-        // Check if matching row exists by slug
-        const { data: existing } = await supabase
-          .from('services')
-          .select('id')
-          .eq('slug', service.slug)
-          .maybeSingle();
-        
-        if (existing?.id) {
-          const { data, error } = await supabase
-            .from('services')
-            .update(dbPayload)
-            .eq('id', existing.id)
-            .select()
-            .maybeSingle();
-          if (error) console.warn('Supabase update service by slug error:', error.message || error);
-          if (!error && data) savedItem = data as Service;
-        }
-      }
-
-      if (!savedItem) {
-        // Insert new row (omitting id so Supabase uuid_generate_v4() generates valid UUID)
-        const { data, error } = await supabase
-          .from('services')
-          .insert({ ...dbPayload, created_at: now })
-          .select()
-          .single();
-        if (error) console.warn('Supabase insert service error:', error.message || error);
-        if (!error && data) savedItem = data as Service;
-      }
-    } catch (e) {
-      console.warn('Supabase saveService notice:', e);
+  if (service.id && isValidUUID(service.id)) {
+    const { data, error } = await supabase
+      .from('services').update(dbPayload).eq('id', service.id).select().maybeSingle();
+    if (error) throw new Error(error.message || 'Failed to update service');
+    if (data) {
+      logAuditAction('SAVE_SERVICE', 'services', data.id, { title: data.title }, supabaseClient);
+      return data as Service;
     }
   }
 
-  if (savedItem) {
-    const fullSaved: Service = {
-      ...savedItem,
-      approach: service.approach || [],
-      requirements: service.requirements || undefined,
-      order_index: service.order_index ?? (memoryServices.length + 1),
-      meta_title: service.meta_title || undefined,
-      meta_description: service.meta_description || undefined,
-      canonical_url: service.canonical_url || undefined,
-    };
-    const idx = memoryServices.findIndex(s => s.id === savedItem!.id || s.slug === savedItem!.slug);
-    if (idx !== -1) {
-      memoryServices[idx] = fullSaved;
-    } else {
-      memoryServices.unshift(fullSaved);
+  if (service.slug) {
+    const { data: existing } = await supabase
+      .from('services').select('id').eq('slug', service.slug).maybeSingle();
+    if (existing?.id) {
+      const { data, error } = await supabase
+        .from('services').update(dbPayload).eq('id', existing.id).select().maybeSingle();
+      if (error) throw new Error(error.message || 'Failed to update service');
+      if (data) {
+        logAuditAction('SAVE_SERVICE', 'services', data.id, { title: data.title }, supabaseClient);
+        return data as Service;
+      }
     }
-    logAuditAction('SAVE_SERVICE', 'services', savedItem.id, { title: savedItem.title });
-    return fullSaved;
   }
 
-  // Memory fallback
-  const localId = service.id || ('s_' + Math.random().toString(36).substring(2, 9));
-  const fallbackService: Service = {
-    ...dbPayload,
-    id: localId,
-    approach: service.approach || [],
-    requirements: service.requirements || undefined,
-    order_index: service.order_index ?? (memoryServices.length + 1),
-    meta_title: service.meta_title || undefined,
-    meta_description: service.meta_description || undefined,
-    canonical_url: service.canonical_url || undefined,
-    created_at: service.created_at || now,
-    updated_at: now
-  };
-
-  const idx = memoryServices.findIndex(s => s.id === localId || (service.slug && s.slug === service.slug));
-  if (idx !== -1) {
-    memoryServices[idx] = fallbackService;
-  } else {
-    memoryServices.unshift(fallbackService);
-  }
-  logAuditAction('SAVE_SERVICE', 'services', localId, { title: fallbackService.title });
-  return fallbackService;
+  const { data, error } = await supabase
+    .from('services').insert({ ...dbPayload, created_at: now }).select().single();
+  if (error) throw new Error(error.message || 'Failed to insert service');
+  logAuditAction('SAVE_SERVICE', 'services', data.id, { title: data.title }, supabaseClient);
+  return data as Service;
 }
 
-export async function deleteService(idOrSlug: string): Promise<boolean> {
-  deletedServiceIds.add(idOrSlug);
-
+export async function deleteService(idOrSlug: string, supabaseClient?: any): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    try {
-      const res = await fetch(`/api/services?id=${encodeURIComponent(idOrSlug)}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        const data = await res.json();
-        memoryServices = memoryServices.filter(s => s.id !== idOrSlug && s.slug !== idOrSlug);
-        return data.success;
-      }
-    } catch (err) {
-      console.warn('Client deleteService fetch error:', err);
+    const res = await fetch(`/api/services?id=${encodeURIComponent(idOrSlug)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to delete service' }));
+      throw new Error(err.error || 'Failed to delete service');
     }
+    const data = await res.json();
+    return data.success;
   }
 
-  const supabase = createClient();
-  if (supabase) {
-    try {
-      if (isValidUUID(idOrSlug)) {
-        await supabase.from('services').delete().eq('id', idOrSlug);
-      } else {
-        await supabase.from('services').delete().eq('slug', idOrSlug);
-      }
-    } catch (e) {
-      console.warn('Supabase deleteService notice:', e);
-    }
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
+
+  if (isValidUUID(idOrSlug)) {
+    const { error } = await supabase.from('services').delete().eq('id', idOrSlug);
+    if (error) throw new Error(error.message || 'Failed to delete service');
+  } else {
+    const { error } = await supabase.from('services').delete().eq('slug', idOrSlug);
+    if (error) throw new Error(error.message || 'Failed to delete service');
   }
-  
-  memoryServices = memoryServices.filter(s => s.id !== idOrSlug && s.slug !== idOrSlug);
-  logAuditAction('DELETE_SERVICE', 'services', idOrSlug);
+  logAuditAction('DELETE_SERVICE', 'services', idOrSlug, undefined, supabaseClient);
   return true;
 }
 
 // ==============================================================================
 // 2. JOBS & CAREERS API
 // ==============================================================================
-export async function getJobs(status?: 'active' | 'closed' | 'draft'): Promise<Job[]> {
+export async function getJobs(status?: 'active' | 'closed' | 'draft', adminMode?: boolean): Promise<Job[]> {
   if (typeof window !== 'undefined') {
+    if (adminMode) {
+      const res = await fetch('/api/jobs?mode=admin');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to fetch jobs' }));
+        throw new Error(err.error || 'Failed to fetch jobs');
+      }
+      return await res.json();
+    }
     try {
       const url = status ? `/api/jobs?status=${status}` : '/api/jobs';
       const res = await fetch(url);
@@ -343,32 +274,24 @@ export async function getJobByIdOrSlug(identifier: string): Promise<Job | null> 
   return memoryJobs.find(j => j.id === identifier || j.slug === identifier) || null;
 }
 
-export async function saveJob(job: Partial<Job>): Promise<Job> {
+export async function saveJob(job: Partial<Job>, supabaseClient?: any): Promise<Job> {
   if (typeof window !== 'undefined') {
-    try {
-      const res = await fetch('/api/jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(job)
-      });
-      if (res.ok) {
-        const saved = await res.json();
-        const idx = memoryJobs.findIndex(j => j.id === saved.id || (saved.slug && j.slug === saved.slug));
-        if (idx !== -1) {
-          memoryJobs[idx] = saved;
-        } else {
-          memoryJobs.unshift(saved);
-        }
-        return saved;
-      }
-    } catch (err) {
-      console.warn('Client saveJob fetch error:', err);
+    const res = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(job)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to save job' }));
+      throw new Error(err.error || 'Failed to save job');
     }
+    return await res.json();
   }
 
-  const supabase = createClient();
-  const now = new Date().toISOString();
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
 
+  const now = new Date().toISOString();
   const payload: any = {
     title: job.title || 'Untitled Opening',
     slug: job.slug || 'job-' + Date.now(),
@@ -387,108 +310,57 @@ export async function saveJob(job: Partial<Job>): Promise<Job> {
     updated_at: now,
   };
 
-  let savedItem: Job | null = null;
-
-  if (supabase) {
-    try {
-      if (job.id && isValidUUID(job.id)) {
-        const { data, error } = await supabase
-          .from('jobs')
-          .update(payload)
-          .eq('id', job.id)
-          .select()
-          .maybeSingle();
-        if (!error && data) savedItem = data as Job;
-      } else if (job.slug) {
-        const { data: existing } = await supabase
-          .from('jobs')
-          .select('id')
-          .eq('slug', job.slug)
-          .maybeSingle();
-        if (existing?.id) {
-          const { data, error } = await supabase
-            .from('jobs')
-            .update(payload)
-            .eq('id', existing.id)
-            .select()
-            .maybeSingle();
-          if (!error && data) savedItem = data as Job;
-        }
+  if (job.id && isValidUUID(job.id)) {
+    const { data, error } = await supabase
+      .from('jobs').update(payload).eq('id', job.id).select().maybeSingle();
+    if (error) throw new Error(error.message || 'Failed to update job');
+    if (data) {
+      logAuditAction('SAVE_JOB', 'jobs', data.id, { title: data.title }, supabaseClient);
+      return data as Job;
+    }
+  } else if (job.slug) {
+    const { data: existing } = await supabase
+      .from('jobs').select('id').eq('slug', job.slug).maybeSingle();
+    if (existing?.id) {
+      const { data, error } = await supabase
+        .from('jobs').update(payload).eq('id', existing.id).select().maybeSingle();
+      if (error) throw new Error(error.message || 'Failed to update job');
+      if (data) {
+        logAuditAction('SAVE_JOB', 'jobs', data.id, { title: data.title }, supabaseClient);
+        return data as Job;
       }
-
-      if (!savedItem) {
-        const { data, error } = await supabase
-          .from('jobs')
-          .insert({ ...payload, created_at: now })
-          .select()
-          .single();
-        if (!error && data) savedItem = data as Job;
-      }
-    } catch (e) {
-      console.warn('Supabase saveJob notice:', e);
     }
   }
 
-  if (savedItem) {
-    const idx = memoryJobs.findIndex(j => j.id === savedItem!.id || j.slug === savedItem!.slug);
-    if (idx !== -1) {
-      memoryJobs[idx] = { ...savedItem, applications_count: memoryJobs[idx]?.applications_count || 0 };
-    } else {
-      memoryJobs.unshift(savedItem);
-    }
-    logAuditAction('SAVE_JOB', 'jobs', savedItem.id, { title: savedItem.title });
-    return savedItem;
-  }
-
-  const localId = job.id || ('j_' + Math.random().toString(36).substring(2, 9));
-  const fallbackJob: Job = {
-    ...payload,
-    id: localId,
-    applications_count: 0,
-    created_at: job.created_at || now,
-    updated_at: now,
-  };
-
-  const idx = memoryJobs.findIndex(j => j.id === localId || (job.slug && j.slug === job.slug));
-  if (idx !== -1) {
-    memoryJobs[idx] = fallbackJob;
-  } else {
-    memoryJobs.unshift(fallbackJob);
-  }
-  logAuditAction('SAVE_JOB', 'jobs', localId, { title: fallbackJob.title });
-  return fallbackJob;
+  const { data, error } = await supabase
+    .from('jobs').insert({ ...payload, created_at: now }).select().single();
+  if (error) throw new Error(error.message || 'Failed to insert job');
+  logAuditAction('SAVE_JOB', 'jobs', data.id, { title: data.title }, supabaseClient);
+  return data as Job;
 }
 
-export async function deleteJob(idOrSlug: string): Promise<boolean> {
+export async function deleteJob(idOrSlug: string, supabaseClient?: any): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    try {
-      const res = await fetch(`/api/jobs?id=${encodeURIComponent(idOrSlug)}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        const data = await res.json();
-        memoryJobs = memoryJobs.filter(j => j.id !== idOrSlug && j.slug !== idOrSlug);
-        return data.success;
-      }
-    } catch (err) {
-      console.warn('Client deleteJob fetch error:', err);
+    const res = await fetch(`/api/jobs?id=${encodeURIComponent(idOrSlug)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to delete job' }));
+      throw new Error(err.error || 'Failed to delete job');
     }
+    const data = await res.json();
+    return data.success;
   }
 
-  const supabase = createClient();
-  if (supabase) {
-    try {
-      if (isValidUUID(idOrSlug)) {
-        await supabase.from('jobs').delete().eq('id', idOrSlug);
-      } else {
-        await supabase.from('jobs').delete().eq('slug', idOrSlug);
-      }
-    } catch (e) {
-      console.warn('Supabase deleteJob notice:', e);
-    }
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
+
+  if (isValidUUID(idOrSlug)) {
+    const { error } = await supabase.from('jobs').delete().eq('id', idOrSlug);
+    if (error) throw new Error(error.message || 'Failed to delete job');
+  } else {
+    const { error } = await supabase.from('jobs').delete().eq('slug', idOrSlug);
+    if (error) throw new Error(error.message || 'Failed to delete job');
   }
-  memoryJobs = memoryJobs.filter(j => j.id !== idOrSlug && j.slug !== idOrSlug);
-  logAuditAction('DELETE_JOB', 'jobs', idOrSlug, {});
+  logAuditAction('DELETE_JOB', 'jobs', idOrSlug, {}, supabaseClient);
   return true;
 }
 
@@ -543,7 +415,10 @@ export async function submitApplication(appData: {
       }
 
       const { data, error } = await supabase.from('applications').insert(payload).select().single();
-      if (!error && data) {
+      if (error) {
+        throw new Error(error.message || 'Failed to save application to database');
+      }
+      if (data) {
         // Also sync memory
         const newApp: Application = {
           ...payload,
@@ -557,11 +432,8 @@ export async function submitApplication(appData: {
         logAuditAction('SUBMIT_APPLICATION', 'applications', data.id, { candidate: appData.full_name });
         return { success: true, id: data.id, message: 'Application submitted successfully to Supabase.' };
       }
-      if (error) {
-        console.error('Supabase Application Insert Error:', error.message);
-      }
     } catch (e) {
-      console.warn('Supabase application submission notice:', e);
+      throw e;
     }
   }
 
@@ -593,6 +465,15 @@ export async function submitApplication(appData: {
 }
 
 export async function getApplications(): Promise<Application[]> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch('/api/admin/applications');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to fetch applications' }));
+      throw new Error(err.error || 'Failed to fetch applications');
+    }
+    return await res.json();
+  }
+
   const supabase = createClient();
   if (supabase) {
     try {
@@ -625,40 +506,46 @@ export async function getApplications(): Promise<Application[]> {
   return memoryApplications;
 }
 
-export async function updateApplicationStatus(id: string, status: Application['status'], notes?: string): Promise<boolean> {
-  const supabase = createClient();
-  const now = new Date().toISOString();
-  if (supabase && isValidUUID(id)) {
-    try {
-      await supabase.from('applications').update({ status, admin_notes: notes, updated_at: now }).eq('id', id);
-    } catch (e) {
-      console.warn('Supabase updateApplicationStatus notice:', e);
+export async function updateApplicationStatus(id: string, status: Application['status'], notes?: string, supabaseClient?: any): Promise<boolean> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch('/api/admin/applications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status, notes })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to update application' }));
+      throw new Error(err.error || 'Failed to update application');
     }
+    return true;
   }
-  const app = memoryApplications.find(a => a.id === id);
-  if (app) {
-    app.status = status;
-    if (notes !== undefined) app.admin_notes = notes;
-    app.updated_at = now;
-  }
-  logAuditAction('UPDATE_APPLICATION_STATUS', 'applications', id, { status, notes });
+
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
+
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('applications').update({ status, admin_notes: notes, updated_at: now }).eq('id', id);
+  if (error) throw new Error(error.message || 'Failed to update application');
+  logAuditAction('UPDATE_APPLICATION_STATUS', 'applications', id, { status, notes }, supabaseClient);
   return true;
 }
 
-export async function deleteApplication(id: string): Promise<boolean> {
-  const supabase = createClient();
-  if (supabase && isValidUUID(id)) {
-    try {
-      await supabase.from('applications').delete().eq('id', id);
-    } catch (e) {
-      console.warn('Supabase deleteApplication notice:', e);
+export async function deleteApplication(id: string, supabaseClient?: any): Promise<boolean> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch(`/api/admin/applications?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to delete application' }));
+      throw new Error(err.error || 'Failed to delete application');
     }
+    return true;
   }
-  const index = memoryApplications.findIndex(a => a.id === id);
-  if (index !== -1) {
-    memoryApplications.splice(index, 1);
-  }
-  logAuditAction('DELETE_APPLICATION', 'applications', id, { id });
+
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
+
+  const { error } = await supabase.from('applications').delete().eq('id', id);
+  if (error) throw new Error(error.message || 'Failed to delete application');
+  logAuditAction('DELETE_APPLICATION', 'applications', id, { id }, supabaseClient);
   return true;
 }
 
@@ -750,32 +637,24 @@ export async function getCaseStudyBySlug(slug: string): Promise<CaseStudy | null
   return all.find(c => c.slug === slug) || null;
 }
 
-export async function saveCaseStudy(caseStudy: Partial<CaseStudy>): Promise<CaseStudy> {
+export async function saveCaseStudy(caseStudy: Partial<CaseStudy>, supabaseClient?: any): Promise<CaseStudy> {
   if (typeof window !== 'undefined') {
-    try {
-      const res = await fetch('/api/case-studies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(caseStudy)
-      });
-      if (res.ok) {
-        const saved = await res.json();
-        const idx = memoryCaseStudies.findIndex(c => c.id === saved.id || (saved.slug && c.slug === saved.slug));
-        if (idx !== -1) {
-          memoryCaseStudies[idx] = saved;
-        } else {
-          memoryCaseStudies.unshift(saved);
-        }
-        return saved;
-      }
-    } catch (err) {
-      console.warn('Client saveCaseStudy fetch error:', err);
+    const res = await fetch('/api/case-studies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(caseStudy)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to save case study' }));
+      throw new Error(err.error || 'Failed to save case study');
     }
+    return await res.json();
   }
 
-  const supabase = createClient();
-  const now = new Date().toISOString();
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
 
+  const now = new Date().toISOString();
   const payload: any = {
     title: caseStudy.title || 'Untitled Case Study',
     slug: caseStudy.slug || 'case-study-' + Date.now(),
@@ -792,112 +671,57 @@ export async function saveCaseStudy(caseStudy: Partial<CaseStudy>): Promise<Case
     updated_at: now,
   };
 
-  let savedItem: CaseStudy | null = null;
-
-  if (supabase) {
-    try {
-      if (caseStudy.id && isValidUUID(caseStudy.id)) {
-        const { data, error } = await supabase
-          .from('case_studies')
-          .update(payload)
-          .eq('id', caseStudy.id)
-          .select()
-          .maybeSingle();
-        if (error) console.warn('Supabase update case_study error:', error.message || error);
-        if (!error && data) savedItem = data as CaseStudy;
-      } else if (caseStudy.slug) {
-        const { data: existing } = await supabase
-          .from('case_studies')
-          .select('id')
-          .eq('slug', caseStudy.slug)
-          .maybeSingle();
-        if (existing?.id) {
-          const { data, error } = await supabase
-            .from('case_studies')
-            .update(payload)
-            .eq('id', existing.id)
-            .select()
-            .maybeSingle();
-          if (error) console.warn('Supabase update case_study by slug error:', error.message || error);
-          if (!error && data) savedItem = data as CaseStudy;
-        }
+  if (caseStudy.id && isValidUUID(caseStudy.id)) {
+    const { data, error } = await supabase
+      .from('case_studies').update(payload).eq('id', caseStudy.id).select().maybeSingle();
+    if (error) throw new Error(error.message || 'Failed to update case study');
+    if (data) {
+      logAuditAction('SAVE_CASE_STUDY', 'case_studies', data.id, { title: data.title }, supabaseClient);
+      return data as CaseStudy;
+    }
+  } else if (caseStudy.slug) {
+    const { data: existing } = await supabase
+      .from('case_studies').select('id').eq('slug', caseStudy.slug).maybeSingle();
+    if (existing?.id) {
+      const { data, error } = await supabase
+        .from('case_studies').update(payload).eq('id', existing.id).select().maybeSingle();
+      if (error) throw new Error(error.message || 'Failed to update case study');
+      if (data) {
+        logAuditAction('SAVE_CASE_STUDY', 'case_studies', data.id, { title: data.title }, supabaseClient);
+        return data as CaseStudy;
       }
-
-      if (!savedItem) {
-        const { data, error } = await supabase
-          .from('case_studies')
-          .insert({ ...payload, created_at: now })
-          .select()
-          .single();
-        if (error) console.warn('Supabase insert case_study error:', error.message || error);
-        if (!error && data) savedItem = data as CaseStudy;
-      }
-    } catch (e) {
-      console.warn('Supabase saveCaseStudy notice:', e);
     }
   }
 
-  if (savedItem) {
-    const idx = memoryCaseStudies.findIndex(c => c.id === savedItem!.id || c.slug === savedItem!.slug);
-    if (idx !== -1) {
-      memoryCaseStudies[idx] = savedItem;
-    } else {
-      memoryCaseStudies.unshift(savedItem);
-    }
-    logAuditAction('SAVE_CASE_STUDY', 'case_studies', savedItem.id, { title: savedItem.title });
-    return savedItem;
-  }
-
-  const localId = caseStudy.id || ('cs_' + Math.random().toString(36).substring(2, 9));
-  const fallbackCS: CaseStudy = {
-    ...payload,
-    id: localId,
-    created_at: caseStudy.created_at || now,
-    updated_at: now,
-  };
-
-  const idx = memoryCaseStudies.findIndex(c => c.id === localId || (caseStudy.slug && c.slug === caseStudy.slug));
-  if (idx !== -1) {
-    memoryCaseStudies[idx] = fallbackCS;
-  } else {
-    memoryCaseStudies.unshift(fallbackCS);
-  }
-  logAuditAction('SAVE_CASE_STUDY', 'case_studies', localId, { title: fallbackCS.title });
-  return fallbackCS;
+  const { data, error } = await supabase
+    .from('case_studies').insert({ ...payload, created_at: now }).select().single();
+  if (error) throw new Error(error.message || 'Failed to insert case study');
+  logAuditAction('SAVE_CASE_STUDY', 'case_studies', data.id, { title: data.title }, supabaseClient);
+  return data as CaseStudy;
 }
 
-export async function deleteCaseStudy(idOrSlug: string): Promise<boolean> {
-  deletedCaseStudyIds.add(idOrSlug);
-
+export async function deleteCaseStudy(idOrSlug: string, supabaseClient?: any): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    try {
-      const res = await fetch(`/api/case-studies?id=${encodeURIComponent(idOrSlug)}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) {
-        const data = await res.json();
-        memoryCaseStudies = memoryCaseStudies.filter(c => c.id !== idOrSlug && c.slug !== idOrSlug);
-        return data.success;
-      }
-    } catch (err) {
-      console.warn('Client deleteCaseStudy fetch error:', err);
+    const res = await fetch(`/api/case-studies?id=${encodeURIComponent(idOrSlug)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to delete case study' }));
+      throw new Error(err.error || 'Failed to delete case study');
     }
+    const data = await res.json();
+    return data.success;
   }
 
-  const supabase = createClient();
-  if (supabase) {
-    try {
-      if (isValidUUID(idOrSlug)) {
-        await supabase.from('case_studies').delete().eq('id', idOrSlug);
-      } else {
-        await supabase.from('case_studies').delete().eq('slug', idOrSlug);
-      }
-    } catch (e) {
-      console.warn('Supabase deleteCaseStudy notice:', e);
-    }
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
+
+  if (isValidUUID(idOrSlug)) {
+    const { error } = await supabase.from('case_studies').delete().eq('id', idOrSlug);
+    if (error) throw new Error(error.message || 'Failed to delete case study');
+  } else {
+    const { error } = await supabase.from('case_studies').delete().eq('slug', idOrSlug);
+    if (error) throw new Error(error.message || 'Failed to delete case study');
   }
-  memoryCaseStudies = memoryCaseStudies.filter(c => c.id !== idOrSlug && c.slug !== idOrSlug);
-  logAuditAction('DELETE_CASE_STUDY', 'case_studies', idOrSlug, {});
+  logAuditAction('DELETE_CASE_STUDY', 'case_studies', idOrSlug, {}, supabaseClient);
   return true;
 }
 
@@ -932,11 +756,14 @@ export async function submitEnquiry(data: {
       };
 
       const { data: result, error } = await supabase.from('enquiries').insert(payload).select().single();
-      if (!error && result) {
+      if (error) {
+        throw new Error(error.message || 'Failed to save enquiry to database');
+      }
+      if (result) {
         return { success: true, id: result.id, message: 'Your enquiry has been received and stored in Supabase.' };
       }
     } catch (e) {
-      console.warn('Supabase submitEnquiry notice:', e);
+      throw e;
     }
   }
 
@@ -964,6 +791,15 @@ export async function submitEnquiry(data: {
 }
 
 export async function getEnquiries(): Promise<Enquiry[]> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch('/api/admin/enquiries');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to fetch enquiries' }));
+      throw new Error(err.error || 'Failed to fetch enquiries');
+    }
+    return await res.json();
+  }
+
   const supabase = createClient();
   if (supabase) {
     try {
@@ -976,40 +812,46 @@ export async function getEnquiries(): Promise<Enquiry[]> {
   return memoryEnquiries;
 }
 
-export async function updateEnquiryStatus(id: string, status: Enquiry['status'], notes?: string): Promise<boolean> {
-  const supabase = createClient();
-  const now = new Date().toISOString();
-  if (supabase && isValidUUID(id)) {
-    try {
-      await supabase.from('enquiries').update({ status, admin_notes: notes, updated_at: now }).eq('id', id);
-    } catch (e) {
-      console.warn('Supabase updateEnquiryStatus notice:', e);
+export async function updateEnquiryStatus(id: string, status: Enquiry['status'], notes?: string, supabaseClient?: any): Promise<boolean> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch('/api/admin/enquiries', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status, notes })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to update enquiry' }));
+      throw new Error(err.error || 'Failed to update enquiry');
     }
+    return true;
   }
-  const enq = memoryEnquiries.find(e => e.id === id);
-  if (enq) {
-    enq.status = status;
-    if (notes !== undefined) enq.admin_notes = notes;
-    enq.updated_at = now;
-  }
-  logAuditAction('UPDATE_ENQUIRY_STATUS', 'enquiries', id, { status, notes });
+
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
+
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('enquiries').update({ status, admin_notes: notes, updated_at: now }).eq('id', id);
+  if (error) throw new Error(error.message || 'Failed to update enquiry');
+  logAuditAction('UPDATE_ENQUIRY_STATUS', 'enquiries', id, { status, notes }, supabaseClient);
   return true;
 }
 
-export async function deleteEnquiry(id: string): Promise<boolean> {
-  const supabase = createClient();
-  if (supabase && isValidUUID(id)) {
-    try {
-      await supabase.from('enquiries').delete().eq('id', id);
-    } catch (e) {
-      console.warn('Supabase deleteEnquiry notice:', e);
+export async function deleteEnquiry(id: string, supabaseClient?: any): Promise<boolean> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch(`/api/admin/enquiries?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to delete enquiry' }));
+      throw new Error(err.error || 'Failed to delete enquiry');
     }
+    return true;
   }
-  const index = memoryEnquiries.findIndex(e => e.id === id);
-  if (index !== -1) {
-    memoryEnquiries.splice(index, 1);
-  }
-  logAuditAction('DELETE_ENQUIRY', 'enquiries', id, { id });
+
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
+
+  const { error } = await supabase.from('enquiries').delete().eq('id', id);
+  if (error) throw new Error(error.message || 'Failed to delete enquiry');
+  logAuditAction('DELETE_ENQUIRY', 'enquiries', id, { id }, supabaseClient);
   return true;
 }
 
@@ -1035,18 +877,27 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   return memorySettings;
 }
 
-export async function updateSiteSettings(key: keyof SiteSettings, value: any): Promise<boolean> {
-  const supabase = createClient();
-  const now = new Date().toISOString();
-  if (supabase) {
-    try {
-      await supabase.from('site_settings').upsert({ key, value, updated_at: now }, { onConflict: 'key' });
-    } catch (e) {
-      console.warn('Supabase updateSiteSettings notice:', e);
+export async function updateSiteSettings(key: keyof SiteSettings, value: any, supabaseClient?: any): Promise<boolean> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to update settings' }));
+      throw new Error(err.error || 'Failed to update settings');
     }
+    return true;
   }
-  memorySettings[key] = value;
-  logAuditAction('UPDATE_SITE_SETTINGS', 'site_settings', key, { value });
+
+  const supabase = supabaseClient || createClient();
+  if (!supabase) throw new Error('Supabase client not available');
+
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('site_settings').upsert({ key, value, updated_at: now }, { onConflict: 'key' });
+  if (error) throw new Error(error.message || 'Failed to update settings');
+  logAuditAction('UPDATE_SITE_SETTINGS', 'site_settings', key, { value }, supabaseClient);
   return true;
 }
 
@@ -1054,6 +905,15 @@ export async function updateSiteSettings(key: keyof SiteSettings, value: any): P
 // 7. AUDIT LOGS & STATS
 // ==============================================================================
 export async function getAuditLogs(): Promise<AuditLog[]> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch('/api/admin/audit-logs');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed to fetch audit logs' }));
+      throw new Error(err.error || 'Failed to fetch audit logs');
+    }
+    return await res.json();
+  }
+
   const supabase = createClient();
   if (supabase) {
     try {
@@ -1066,7 +926,7 @@ export async function getAuditLogs(): Promise<AuditLog[]> {
   return memoryAuditLogs;
 }
 
-export function logAuditAction(action: string, entity_type?: string, entity_id?: string, details?: any) {
+export function logAuditAction(action: string, entity_type?: string, entity_id?: string, details?: any, supabaseClient?: any) {
   const log: AuditLog = {
     id: 'log_' + Math.random().toString(36).substring(2, 9),
     user_email: 'admin@coralswift.com',
@@ -1080,8 +940,7 @@ export function logAuditAction(action: string, entity_type?: string, entity_id?:
   memoryAuditLogs.unshift(log);
   if (memoryAuditLogs.length > 100) memoryAuditLogs.pop();
 
-  // Asynchronously persist to Supabase
-  const supabase = createClient();
+  const supabase = supabaseClient || createClient();
   if (supabase) {
     supabase.from('audit_logs').insert({
       user_email: log.user_email,
@@ -1100,8 +959,8 @@ export function logAuditAction(action: string, entity_type?: string, entity_id?:
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
-  const services = await getServices();
-  const jobs = await getJobs();
+  const services = await getServices(undefined, true);
+  const jobs = await getJobs(undefined, true);
   const caseStudies = await getAllCaseStudiesAdmin();
   const enquiries = await getEnquiries();
   const applications = await getApplications();

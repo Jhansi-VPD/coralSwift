@@ -1,11 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { getJobs, saveJob, deleteJob } from '@/lib/api';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') as 'active' | 'closed' | 'draft' | undefined;
+    const mode = searchParams.get('mode');
+
+    if (mode === 'admin') {
+      const adminClient = createAdminClient();
+      if (!adminClient) {
+        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      }
+      const { data, error } = await adminClient
+        .from('jobs')
+        .select('*, applications:applications(count)')
+        .order('created_at', { ascending: false });
+      if (error) throw new Error(error.message || 'Failed to fetch jobs');
+      const jobs = (data || []).map((j: any) => ({
+        ...j,
+        applications_count: j.applications?.[0]?.count || 0
+      }));
+      return NextResponse.json(jobs);
+    }
+
     const jobs = await getJobs(status || undefined);
     return NextResponse.json(jobs);
   } catch (error: any) {
@@ -15,10 +35,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const adminClient = createAdminClient();
+    if (!adminClient) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
     const body = await request.json();
-    const saved = await saveJob(body);
+    const saved = await saveJob(body, adminClient);
 
-    // Revalidate public and admin routes so Server Components refresh immediately
     revalidatePath('/careers');
     revalidatePath('/careers/[id]', 'page');
     revalidatePath('/');
@@ -32,13 +55,17 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const adminClient = createAdminClient();
+    if (!adminClient) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) {
       return NextResponse.json({ error: 'Missing job id' }, { status: 400 });
     }
 
-    const success = await deleteJob(id);
+    const success = await deleteJob(id, adminClient);
 
     revalidatePath('/careers');
     revalidatePath('/careers/[id]', 'page');

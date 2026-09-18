@@ -31,7 +31,7 @@ function AdminCareersPageContent() {
   }, [tabParam]);
 
   const loadData = async () => {
-    const [jData, aData] = await Promise.all([getJobs(), getApplications()]);
+    const [jData, aData] = await Promise.all([getJobs(undefined, true), getApplications()]);
     setJobs(jData);
     setApplications(aData);
   };
