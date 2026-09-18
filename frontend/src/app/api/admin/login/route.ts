@@ -1,9 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/client';
 import { createSessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
+import { checkLoginRateLimit, resetLoginRateLimit } from '@/lib/rate-limit';
+
+function getClientIp(request: NextRequest): string {
+  const xff = request.headers.get('x-forwarded-for');
+  if (xff) {
+    const first = xff.split(',')[0].trim();
+    if (first) return first;
+  }
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) return realIp;
+  return '127.0.0.1';
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+
+    const rateLimit = await checkLoginRateLimit(ip);
+    if (!rateLimit.success) {
+      const retryAfter = Math.ceil((rateLimit.reset - Date.now()) / 1000);
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.max(retryAfter, 900)) },
+        }
+      );
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -53,6 +79,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (authenticatedEmail) {
+      await resetLoginRateLimit(ip);
+
       const token = await createSessionToken(authenticatedEmail);
       const isProd = process.env.NODE_ENV === 'production';
 
