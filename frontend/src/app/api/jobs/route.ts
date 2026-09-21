@@ -35,25 +35,32 @@ export async function GET(request: NextRequest) {
 
     if (mode === 'admin') {
       const adminClient = createAdminClient();
-      if (!adminClient) {
-        return NextResponse.json(await getJobs(undefined));
+      if (adminClient) {
+        try {
+          const { data, error } = await adminClient
+            .from('jobs')
+            .select('*, applications:applications(count)')
+            .order('created_at', { ascending: false });
+          if (!error && data && data.length > 0) {
+            const jobs = (data as any[]).map((j: any) => ({
+              ...j,
+              applications_count: j.applications?.[0]?.count || 0
+            }));
+            return NextResponse.json(jobs);
+          }
+        } catch (e) {
+          console.warn('Supabase admin jobs query fallback:', e);
+        }
       }
-      const { data, error } = await adminClient
-        .from('jobs')
-        .select('*, applications:applications(count)')
-        .order('created_at', { ascending: false });
-      if (error) throw new Error(error.message || 'Failed to fetch jobs');
-      const jobs = (data || []).map((j: any) => ({
-        ...j,
-        applications_count: j.applications?.[0]?.count || 0
-      }));
-      return NextResponse.json(jobs);
+      const fallback = await getJobs(undefined);
+      return NextResponse.json(fallback);
     }
 
     const jobs = await getJobs(status || undefined);
     return NextResponse.json(jobs);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch jobs' }, { status: 500 });
+    const fallback = await getJobs(undefined);
+    return NextResponse.json(fallback);
   }
 }
 

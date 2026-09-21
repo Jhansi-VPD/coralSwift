@@ -35,22 +35,29 @@ export async function GET(request: NextRequest) {
 
     if (mode === 'admin') {
       const adminClient = createAdminClient();
-      if (!adminClient) {
-        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      if (adminClient) {
+        try {
+          const { data, error } = await adminClient
+            .from('case_studies')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!error && data && data.length > 0) {
+            return NextResponse.json(data);
+          }
+        } catch (e) {
+          console.warn('Supabase admin case_studies query fallback:', e);
+        }
       }
-      const { data, error } = await adminClient
-        .from('case_studies')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw new Error(error.message || 'Failed to fetch case studies');
-      return NextResponse.json(data || []);
+      const fallback = await getCaseStudies(false);
+      return NextResponse.json(fallback);
     }
 
     const caseStudies = await getCaseStudies(featuredOnly);
     const published = caseStudies.filter(c => c.status === 'published');
     return NextResponse.json(published);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch case studies' }, { status: 500 });
+    const fallback = await getCaseStudies(false);
+    return NextResponse.json(fallback);
   }
 }
 

@@ -35,21 +35,28 @@ export async function GET(request: NextRequest) {
 
     if (mode === 'admin') {
       const adminClient = createAdminClient();
-      if (!adminClient) {
-        return NextResponse.json(await getServices(undefined));
+      if (adminClient) {
+        try {
+          const { data, error } = await adminClient
+            .from('services')
+            .select('*')
+            .order('created_at', { ascending: true });
+          if (!error && data && data.length > 0) {
+            return NextResponse.json(data);
+          }
+        } catch (e) {
+          console.warn('Supabase admin services query fallback:', e);
+        }
       }
-      const { data, error } = await adminClient
-        .from('services')
-        .select('*')
-        .order('created_at', { ascending: true });
-      if (error) throw new Error(error.message || 'Failed to fetch services');
-      return NextResponse.json(data || []);
+      const fallback = await getServices(undefined);
+      return NextResponse.json(fallback);
     }
 
     const services = await getServices(status || undefined);
     return NextResponse.json(services);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch services' }, { status: 500 });
+    const fallback = await getServices(undefined);
+    return NextResponse.json(fallback);
   }
 }
 
