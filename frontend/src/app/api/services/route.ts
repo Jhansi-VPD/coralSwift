@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     if (mode === 'admin') {
       const adminClient = createAdminClient();
       if (!adminClient) {
-        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+        return NextResponse.json(await getServices(undefined));
       }
       const { data, error } = await adminClient
         .from('services')

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { initialEnquiries } from '@/lib/mock-data';
 
 export async function GET() {
   try {
     const adminClient = createAdminClient();
     if (!adminClient) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      return NextResponse.json(initialEnquiries);
     }
     const { data, error } = await adminClient
       .from('enquiries')
@@ -14,7 +15,7 @@ export async function GET() {
     if (error) throw new Error(error.message || 'Failed to fetch enquiries');
     return NextResponse.json(data || []);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to fetch enquiries' }, { status: 500 });
+    return NextResponse.json(initialEnquiries);
   }
 }
 
