@@ -1,15 +1,11 @@
 /** @type {import('next').NextConfig} */
 
-const isDev = process.env.NODE_ENV === 'development';
-
 const ContentSecurityPolicy = [
   "default-src 'self'",
-  // Development: Next.js React Refresh requires eval() and inline scripts
-  // Production: strict policy — no eval, no inline scripts
-  isDev ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'" : "script-src 'self'",
+  "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://images.unsplash.com https://*.supabase.co",
-  "font-src 'self'",
+  "font-src 'self' data:",
   "connect-src 'self' https://*.supabase.co",
   "frame-ancestors 'none'",
   "base-uri 'self'",
