@@ -4,14 +4,14 @@ import { createSessionToken, SESSION_COOKIE_NAME } from '@/lib/auth';
 import { checkLoginRateLimit, resetLoginRateLimit } from '@/lib/rate-limit';
 
 function getClientIp(request: NextRequest): string {
+  const realIp = request.headers.get('x-real-ip')?.trim();
+  if (realIp) return realIp;
   const xff = request.headers.get('x-forwarded-for');
   if (xff) {
     const first = xff.split(',')[0].trim();
     if (first) return first;
   }
-  const realIp = request.headers.get('x-real-ip');
-  if (realIp) return realIp;
-  return '127.0.0.1';
+  return 'unknown';
 }
 
 export async function POST(request: NextRequest) {

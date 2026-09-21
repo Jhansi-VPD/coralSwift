@@ -583,7 +583,7 @@ export const initialAuditLogs: AuditLog[] = [
     entity_type: 'AUTH',
     entity_id: 'usr_admin',
     details: { method: 'password', browser: 'Chrome 128 (Windows)' },
-    ip_address: '198.51.100.42',
+    ip_address: null,
     created_at: '2026-09-08T15:30:00Z'
   },
   {
@@ -593,7 +593,7 @@ export const initialAuditLogs: AuditLog[] = [
     entity_type: 'SERVICE',
     entity_id: 'cloud-architecture-modernization',
     details: { changes: ['updated capabilities', 'published status'] },
-    ip_address: '198.51.100.42',
+    ip_address: null,
     created_at: '2026-09-08T12:00:00Z'
   },
   {
@@ -603,7 +603,7 @@ export const initialAuditLogs: AuditLog[] = [
     entity_type: 'ENQUIRY',
     entity_id: 'e2',
     details: { previous_status: 'new', new_status: 'in_review' },
-    ip_address: '198.51.100.42',
+    ip_address: null,
     created_at: '2026-09-07T16:00:00Z'
   }
 ];
