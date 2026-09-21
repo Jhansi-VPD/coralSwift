@@ -127,7 +127,7 @@ export interface AuditLog {
   entity_type?: string;
   entity_id?: string;
   details?: any;
-  ip_address?: string;
+  ip_address?: string | null;
   created_at: string;
 }
 

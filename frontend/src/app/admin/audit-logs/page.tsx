@@ -59,7 +59,7 @@ export default function AdminAuditLogsPage() {
                       {log.entity_type} {log.entity_id ? `(${log.entity_id})` : ''}
                     </td>
                     <td className="px-6 py-4 align-middle whitespace-nowrap text-slate-400">
-                      {log.ip_address || '127.0.0.1'}
+                      {log.ip_address || 'unknown'}
                     </td>
                     <td className="px-6 py-4 align-middle whitespace-nowrap text-slate-500">
                       {formatDate(log.created_at)}

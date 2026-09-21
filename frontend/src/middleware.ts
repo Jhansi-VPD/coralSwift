@@ -7,7 +7,7 @@ const SESSION_COOKIE_NAME = 'coralswift_admin_session';
  * Mirrors the logic in lib/auth.ts but uses only standard Web APIs.
  */
 async function verifySessionToken(token: string): Promise<boolean> {
-  const SESSION_SECRET = process.env.ADMIN_PASSWORD || '';
+  const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || '';
   if (!SESSION_SECRET) return false;
 
   try {

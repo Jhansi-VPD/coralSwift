@@ -3,6 +3,30 @@ import { revalidatePath } from 'next/cache';
 import { getCaseStudies, saveCaseStudy, deleteCaseStudy } from '@/lib/api';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+/**
+ * Extracts a trustworthy client IP for audit logging only.
+ * Kept intentionally separate from the rate-limit getClientIp() in login/route.ts.
+ *
+ * Header priority:
+ *   1. x-real-ip  — On Vercel, set by the edge network; not overridable by clients.
+ *                   ASSUMPTION: Vercel production behaviour. Requires deployment validation.
+ *   2. x-forwarded-for[0] — First value in the chain; fallback when x-real-ip absent.
+ *   3. null       — Returned when neither header is present (e.g. local dev without proxy).
+ *
+ * Do not treat the returned value as spoof-proof in local development:
+ * without a reverse proxy both headers are client-controlled.
+ */
+function getAuditIp(request: NextRequest): string {
+  const realIp = request.headers.get('x-real-ip')?.trim();
+  if (realIp) return realIp;
+  const xff = request.headers.get('x-forwarded-for');
+  if (xff) {
+    const first = xff.split(',')[0].trim();
+    if (first) return first;
+  }
+  return 'unknown';
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -37,7 +61,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
     const body = await request.json();
-    const saved = await saveCaseStudy(body, adminClient);
+    const ip = getAuditIp(request);
+    const saved = await saveCaseStudy(body, adminClient, ip);
 
     revalidatePath('/case-studies');
     revalidatePath('/case-studies/[slug]', 'page');
@@ -61,8 +86,8 @@ export async function DELETE(request: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'Missing case study id' }, { status: 400 });
     }
-
-    const success = await deleteCaseStudy(id, adminClient);
+    const ip = getAuditIp(request);
+    const success = await deleteCaseStudy(id, adminClient, ip);
 
     revalidatePath('/case-studies');
     revalidatePath('/case-studies/[slug]', 'page');
