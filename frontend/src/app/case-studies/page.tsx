@@ -37,7 +37,7 @@ export default async function CaseStudiesPage() {
       </section>
 
       {/* Case Studies Showcase */}
-      <CaseStudiesShowcase caseStudies={caseStudies} limit={10} />
+      <CaseStudiesShowcase caseStudies={caseStudies} variant="list" />
 
       {/* CTA */}
       <CTASection />

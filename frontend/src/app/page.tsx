@@ -36,7 +36,7 @@ export default async function HomePage() {
       <WhyCoralSwift />
 
       {/* 5. Featured Case Studies Showcase */}
-      <CaseStudiesShowcase caseStudies={caseStudies} limit={3} />
+      <CaseStudiesShowcase caseStudies={caseStudies} variant="slider" />
 
       {/* 6. Executive Client Social Proof & Testimonials */}
       <TestimonialsSection />
