@@ -13,14 +13,14 @@ export function Footer() {
   if (isAdmin) return null;
 
   return (
-    <footer className="bg-gradient-to-b from-[#0B192C] via-[#0A1424] to-[#060D17] border-t border-blue-900/50 pt-16 pb-12 relative overflow-hidden text-slate-300">
+    <footer className="bg-gradient-to-b from-[#0B192C] via-[#0A1424] to-[#060D17] border-t border-blue-900/50 pt-8 pb-6 relative overflow-hidden text-slate-300">
       {/* Ambient Radial Glows */}
       <div className="absolute -top-24 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-1/2 left-3/4 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-blue-900/50">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-6 border-b border-blue-900/50">
           
           {/* Brand & Overview */}
           <div className="lg:col-span-2 flex flex-col gap-3.5">
@@ -183,7 +183,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-mono">
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-mono">
           <p>© {new Date().getFullYear()} CoralSwift Technologies Inc. • Officially Partnered by VPD Technologies. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="hover:text-blue-300 transition-colors">
