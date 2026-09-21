@@ -56,7 +56,7 @@ export function Modal({
       aria-modal="true"
       aria-labelledby="modal-title"
       aria-describedby={description ? 'modal-description' : undefined}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-overlay"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 modal-overlay"
     >
       {/* Backdrop */}
       <div 

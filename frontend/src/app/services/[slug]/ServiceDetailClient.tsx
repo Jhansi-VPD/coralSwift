@@ -343,21 +343,51 @@ ${service.deliverables ? service.deliverables.map(d => `- ${d}`).join('\n') : '-
 
 ${profile.rfcDetails}`;
 
-  const handleCopyRFC = () => {
-    navigator.clipboard.writeText(rfcSnippet);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyRFC = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(rfcSnippet);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = rfcSnippet;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (e) {
+      console.warn('Primary copy failed, executing fallback:', e);
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = rfcSnippet;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+      }
+    }
   };
 
   const handleDownloadRFC = () => {
-    const blob = new Blob([rfcSnippet], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `coralswift-rfc-${service.slug}.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const blob = new Blob([rfcSnippet], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `coralswift-rfc-${service.slug || 'baseline'}.md`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error('Failed to download RFC file:', err);
+    }
   };
 
   return (
@@ -430,7 +460,7 @@ ${profile.rfcDetails}`;
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {profile.slaMetrics.map((sla, i) => (
-              <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+              <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 enterprise-dark-card-interactive cursor-pointer">
                 <div className="w-10 h-10 rounded-xl bg-coral-500/20 text-coral-400 flex items-center justify-center shrink-0 mt-0.5">
                   <Gauge className="w-5 h-5" />
                 </div>
@@ -453,7 +483,7 @@ ${profile.rfcDetails}`;
           <div className="lg:col-span-8 space-y-16">
             
             {/* 1. Architectural Scope & Overview */}
-            <div className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200/90 shadow-sm">
+            <div className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200/90 shadow-sm interactive-card">
               <div className="flex items-center gap-2 mb-4 text-xs font-mono uppercase tracking-wider text-coral-600 font-bold">
                 <Layers className="w-4 h-4" />
                 <span>Architectural Overview</span>
@@ -477,13 +507,13 @@ ${profile.rfcDetails}`;
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {profile.techStack.map((tech, idx) => (
-                  <div key={idx} className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <div key={idx} className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm interactive-card cursor-pointer group">
                     <span className="text-xs font-mono font-bold uppercase text-coral-600 block mb-3">
                       {tech.category}
                     </span>
                     <div className="flex flex-wrap gap-2">
                       {tech.tools.map((tool, tIdx) => (
-                        <span key={tIdx} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-semibold font-mono border border-slate-200">
+                        <span key={tIdx} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-semibold font-mono border border-slate-200 group-hover:border-coral-300 transition-colors">
                           {tool}
                         </span>
                       ))}
@@ -506,9 +536,9 @@ ${profile.rfcDetails}`;
                 {service.capabilities.map((cap, i) => (
                   <div 
                     key={i} 
-                    className="p-5 rounded-2xl bg-white border border-slate-200/90 flex items-start gap-3.5 shadow-sm hover:border-coral-300 transition-colors"
+                    className="p-5 rounded-2xl bg-white border border-slate-200/90 flex items-start gap-3.5 shadow-sm interactive-card cursor-pointer group"
                   >
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
                     <span className="text-sm font-semibold text-slate-800">{cap}</span>
                   </div>
                 ))}
@@ -529,7 +559,7 @@ ${profile.rfcDetails}`;
                   {service.approach.map((step, idx) => (
                     <div 
                       key={idx} 
-                      className="p-6 rounded-2xl bg-white border border-slate-200/90 flex flex-col sm:flex-row sm:items-start gap-4 shadow-sm hover:border-coral-200 transition-colors"
+                      className="p-6 rounded-2xl bg-white border border-slate-200/90 flex flex-col sm:flex-row sm:items-start gap-4 shadow-sm interactive-card cursor-pointer"
                     >
                       <div className="font-mono text-sm font-bold text-coral-600 bg-coral-50 px-3.5 py-1.5 rounded-xl border border-coral-200 shrink-0 self-start">
                         {step.step || `0${idx + 1}`}
@@ -645,14 +675,14 @@ ${profile.rfcDetails}`;
         maxWidth="2xl"
       >
         <div className="space-y-4 pt-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-slate-400">Specification Format: Markdown (RFC-2119 compliant)</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <span className="text-xs font-mono text-slate-600 font-semibold">Specification Format: Markdown (RFC-2119 compliant)</span>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopyRFC} className="text-xs text-white border-slate-700 hover:bg-dark-800">
+              <Button variant="secondary" size="sm" onClick={handleCopyRFC} className="text-xs text-slate-800 border-slate-300 hover:bg-slate-100">
                 {copied ? (
                   <>
-                    <Check className="w-3.5 h-3.5 mr-1 text-emerald-400" />
-                    <span>Copied!</span>
+                    <Check className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                    <span className="text-emerald-700 font-bold">Copied!</span>
                   </>
                 ) : (
                   <>
@@ -668,7 +698,7 @@ ${profile.rfcDetails}`;
             </div>
           </div>
 
-          <pre className="p-4 bg-dark-950 text-slate-300 rounded-xl text-xs font-mono overflow-y-auto max-h-96 border border-slate-800 whitespace-pre-wrap leading-relaxed">
+          <pre className="p-5 bg-[#0B1426] text-slate-100 rounded-2xl text-xs font-mono overflow-y-auto max-h-96 border border-slate-800 whitespace-pre-wrap leading-relaxed shadow-inner selection:bg-coral-500 selection:text-white">
             {rfcSnippet}
           </pre>
 

@@ -34,20 +34,65 @@ export function CaseStudyDetailClient({ study }: CaseStudyDetailClientProps) {
 
   const matchedService = mapToServiceOption(study.related_service_slug) || mapToServiceOption(study.industry) || 'General Enterprise Consultation';
 
-  const handleShare = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleShare = async () => {
+    if (typeof window === 'undefined') return;
+    const urlToCopy = window.location.href;
+
+    // 1. Try modern Clipboard API
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(urlToCopy);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+        return;
+      } catch (err) {
+        console.warn('Clipboard writeText rejected:', err);
+      }
+    }
+
+    // 2. Fallback using DOM textarea copy
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = urlToCopy;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      textArea.style.top = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      if (successful) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+        return;
+      }
+    } catch (err) {
+      console.error('DOM fallback copy failed:', err);
+    }
+
+    // 3. Fallback for mobile / Web Share API
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: study.title,
+          text: study.project_context || study.title,
+          url: urlToCopy,
+        });
+      } catch (e) {
+        // User closed native share sheet
+      }
     }
   };
 
-  const handleDownloadBrief = () => {
+  const handleDownloadBrief = async () => {
     try {
       setIsDownloading(true);
-      generateCaseStudyPDF(study);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      await generateCaseStudyPDF(study);
     } catch (err) {
-      console.error('Failed to generate PDF:', err);
+      console.error('Failed to generate PDF brief:', err);
+      alert('Failed to generate PDF brief. Please try again.');
     } finally {
       setIsDownloading(false);
     }

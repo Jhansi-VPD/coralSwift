@@ -47,17 +47,17 @@ export function HeroSection() {
         
         {/* Top Announcement Pill */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm text-xs font-mono text-slate-700 hover:border-coral-400 transition-colors">
+          <Link href="/services" className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm text-xs font-mono text-slate-700 hover:border-coral-400 transition-colors group cursor-pointer">
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-coral-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-coral-500"></span>
             </span>
             <span className="font-semibold text-slate-900">Officially Partnered by VPD Technologies</span>
             <span className="text-slate-300">|</span>
-            <span className="text-coral-600 font-semibold flex items-center gap-1">
+            <span className="text-coral-600 font-semibold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
               Explore 2026 Capabilities <ChevronRight className="w-3.5 h-3.5" />
             </span>
-          </div>
+          </Link>
         </div>
 
         {/* Hero Headline & Subtitle */}

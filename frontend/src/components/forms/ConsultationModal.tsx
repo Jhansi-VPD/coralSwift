@@ -43,10 +43,14 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (defaultService) {
-      setFormData(prev => ({ ...prev, serviceInterest: mapToServiceOption(defaultService) }));
+    if (isOpen) {
+      const mapped = mapToServiceOption(defaultService);
+      setFormData(prev => ({
+        ...prev,
+        serviceInterest: mapped || prev.serviceInterest || SERVICE_OPTIONS[0]
+      }));
     }
-  }, [defaultService]);
+  }, [isOpen, defaultService]);
 
   if (!isOpen) return null;
 

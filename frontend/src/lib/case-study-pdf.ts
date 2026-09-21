@@ -1,7 +1,9 @@
-import { jsPDF } from 'jspdf';
-import { CaseStudy } from './types';
+import type { CaseStudy } from './types';
 
-export function generateCaseStudyPDF(study: CaseStudy) {
+export async function generateCaseStudyPDF(study: CaseStudy) {
+  const jsPdfModule = await import('jspdf');
+  const jsPDF = jsPdfModule.jsPDF || (jsPdfModule as any).default || jsPdfModule;
+
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -38,17 +40,18 @@ export function generateCaseStudyPDF(study: CaseStudy) {
   cursorY = 30;
 
   // Badge: Industry & Verified
+  const industryTag = (study.industry || 'Enterprise Software').toUpperCase();
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(249, 115, 22); // Coral
-  doc.text(`${study.industry.toUpperCase()}  •  VERIFIED PRODUCTION DEPLOYMENT`, margin, cursorY);
+  doc.text(`${industryTag}  •  VERIFIED PRODUCTION DEPLOYMENT`, margin, cursorY);
   cursorY += 8;
 
   // Title
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
   doc.setTextColor(11, 20, 38); // Dark Navy
-  const titleLines = doc.splitTextToSize(study.title, contentWidth);
+  const titleLines = doc.splitTextToSize(study.title || 'Case Study Brief', contentWidth);
   doc.text(titleLines, margin, cursorY);
   cursorY += titleLines.length * 8 + 4;
 
@@ -80,7 +83,7 @@ export function generateCaseStudyPDF(study: CaseStudy) {
   cursorY += 8;
 
   // 2. Telemetry Metrics Section
-  if (study.outcome_metrics && study.outcome_metrics.length > 0) {
+  if (study.outcome_metrics && Array.isArray(study.outcome_metrics) && study.outcome_metrics.length > 0) {
     checkPageBreak(35);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
@@ -109,13 +112,13 @@ export function generateCaseStudyPDF(study: CaseStudy) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
       doc.setTextColor(249, 115, 22); // coral-500
-      doc.text(m.metric, x + 4, cursorY + 7);
+      doc.text(m.metric || '', x + 4, cursorY + 7);
 
       // Metric Label
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.5);
       doc.setTextColor(100, 116, 139); // slate-500
-      const labelLines = doc.splitTextToSize(m.label, colWidth - 8);
+      const labelLines = doc.splitTextToSize(m.label || '', colWidth - 8);
       doc.text(labelLines, x + 4, cursorY + 13);
     });
 
@@ -158,7 +161,7 @@ export function generateCaseStudyPDF(study: CaseStudy) {
   }
 
   // 6. Technology Stack
-  if (study.tech_stack && study.tech_stack.length > 0) {
+  if (study.tech_stack && Array.isArray(study.tech_stack) && study.tech_stack.length > 0) {
     checkPageBreak(25);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
@@ -193,6 +196,21 @@ export function generateCaseStudyPDF(study: CaseStudy) {
     doc.text(`Page ${i} of ${totalPages}`, margin + contentWidth - 16, pageHeight - 9);
   }
 
-  // Download the PDF
-  doc.save(`coralswift-case-study-${study.slug || 'brief'}.pdf`);
+  // Download the PDF with bulletproof Blob URL anchor fallback
+  const fileName = `coralswift-case-study-${study.slug || 'brief'}.pdf`;
+  try {
+    const pdfBlob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.href = blobUrl;
+    downloadAnchor.download = fileName;
+    downloadAnchor.style.display = 'none';
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    document.body.removeChild(downloadAnchor);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+  } catch (err) {
+    console.warn('Blob download anchor failed, executing doc.save fallback:', err);
+    doc.save(fileName);
+  }
 }

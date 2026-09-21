@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { 
   GitBranch, 
@@ -7,11 +9,15 @@ import {
   Workflow, 
   Layers, 
   Lock,
-  Cpu
+  Cpu,
+  ArrowRight
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
+import { useConsultation } from '@/components/ui/ConsultationContext';
 
 export function WhyCoralSwift() {
+  const { openConsultation } = useConsultation();
+
   const pillars = [
     {
       icon: <Terminal className="w-6 h-6 text-coral-600" />,
@@ -61,7 +67,8 @@ export function WhyCoralSwift() {
           {pillars.map((pillar, i) => (
             <div
               key={i}
-              className="glass-card-light glass-card-hover rounded-2xl p-7 flex flex-col justify-between group"
+              onClick={() => openConsultation(pillar.title)}
+              className="glass-card-light glass-card-hover rounded-2xl p-7 flex flex-col justify-between group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-coral-300"
             >
               <div>
                 <div className="flex items-center justify-between mb-6">
@@ -73,7 +80,7 @@ export function WhyCoralSwift() {
                   </span>
                 </div>
 
-                <h3 className="text-lg font-bold text-[#0B1426] mb-3 font-display">
+                <h3 className="text-lg font-bold text-[#0B1426] mb-3 font-display group-hover:text-coral-600 transition-colors">
                   {pillar.title}
                 </h3>
 
@@ -82,8 +89,11 @@ export function WhyCoralSwift() {
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] font-mono text-slate-400 font-semibold">
-                Principle 0{i + 1}
+              <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] font-mono text-slate-400 font-semibold flex items-center justify-between">
+                <span>Principle 0{i + 1}</span>
+                <span className="text-coral-600 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                  Inquire <ArrowRight className="w-3 h-3" />
+                </span>
               </div>
             </div>
           ))}
