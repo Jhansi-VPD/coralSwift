@@ -17,7 +17,7 @@ export function CaseStudiesShowcase({ caseStudies, limit = 3 }: CaseStudiesShowc
   return (
     <section className="py-24 relative bg-slate-50/70 border-t border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
           <div>
@@ -48,7 +48,7 @@ export function CaseStudiesShowcase({ caseStudies, limit = 3 }: CaseStudiesShowc
               className="glass-card-light glass-card-hover rounded-3xl p-7 sm:p-10 border border-slate-200/90 relative overflow-hidden"
             >
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
+
                 {/* Left Column: Context, Challenge, Solution */}
                 <div className="lg:col-span-7 flex flex-col justify-between">
                   <div>
@@ -98,8 +98,8 @@ export function CaseStudiesShowcase({ caseStudies, limit = 3 }: CaseStudiesShowc
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                       <span className="text-xs font-mono text-slate-400 font-semibold mr-1">Stack:</span>
                       {study.tech_stack.map((tech, i) => (
-                        <span 
-                          key={i} 
+                        <span
+                          key={i}
                           className="text-xs font-mono px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-medium border border-slate-200"
                         >
                           {tech}
@@ -127,8 +127,8 @@ export function CaseStudiesShowcase({ caseStudies, limit = 3 }: CaseStudiesShowc
 
                   <div className="grid grid-cols-2 gap-4">
                     {study.outcome_metrics.map((metric, i) => (
-                      <div 
-                        key={i} 
+                      <div
+                        key={i}
                         className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-coral-500/40 transition-colors"
                       >
                         <div className="text-2xl sm:text-3xl font-extrabold text-coral-400 font-display">

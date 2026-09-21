@@ -21,6 +21,7 @@ interface ServicesGridProps {
   title?: string;
   subtitle?: string;
   limit?: number;
+  cardVariant?: 'default' | 'compact';
 }
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -36,7 +37,8 @@ export function ServicesGrid({
   services, 
   title = "Enterprise Software Capabilities", 
   subtitle = "End-to-end engineering excellence across modern cloud, artificial intelligence, and high-concurrency distributed architectures.",
-  limit 
+  limit,
+  cardVariant = 'default'
 }: ServicesGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
@@ -119,33 +121,39 @@ export function ServicesGrid({
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-bold text-[#0B1426] mb-3 group-hover:text-coral-600 transition-colors font-display">
+                <h3 className="text-xl font-bold text-[#0B1426] group-hover:text-coral-600 transition-colors font-display mb-3">
                   {service.title}
                 </h3>
 
                 {/* Description */}
-                <p className="text-sm text-slate-600 leading-relaxed mb-6 line-clamp-3">
+                <p className={`text-sm text-slate-600 leading-relaxed line-clamp-3 ${
+                  cardVariant === 'compact' ? '' : 'mb-6'
+                }`}>
                   {service.short_description}
                 </p>
 
                 {/* Capabilities list */}
-                <div className="space-y-2.5 mb-6 pt-5 border-t border-slate-100">
-                  {service.capabilities.slice(0, 3).map((cap, i) => (
-                    <div key={i} className="flex items-start gap-2.5 text-xs text-slate-700">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                      <span className="font-medium">{cap}</span>
-                    </div>
-                  ))}
-                </div>
+                {cardVariant !== 'compact' && (
+                  <div className="space-y-2.5 mb-6 pt-5 border-t border-slate-100">
+                    {service.capabilities.slice(0, 3).map((cap, i) => (
+                      <div key={i} className="flex items-start gap-2.5 text-xs text-slate-700">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                        <span className="font-medium">{cap}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Card Footer Link */}
-              <div className="pt-4 border-t border-slate-100">
-                <div className="inline-flex items-center justify-between w-full text-xs font-mono font-bold text-coral-600 group-hover:text-coral-700 transition-colors">
-                  <span>Explore Deliverables & RFC</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+              {cardVariant !== 'compact' && (
+                <div className="pt-4 border-t border-slate-100">
+                  <div className="inline-flex items-center justify-between w-full text-xs font-mono font-bold text-coral-600 group-hover:text-coral-700 transition-colors">
+                    <span>Explore Deliverables & RFC</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+                  </div>
                 </div>
-              </div>
+              )}
             </Link>
           ))}
         </div>
