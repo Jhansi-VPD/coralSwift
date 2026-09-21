@@ -24,11 +24,12 @@ export default async function HomePage() {
       <ClientLogoMarquee />
 
       {/* 3. Core Capabilities & Services */}
-      <ServicesGrid 
-        services={services} 
+      <ServicesGrid
+        services={services}
         title="Enterprise Software Capabilities"
         subtitle="End-to-end engineering excellence across modern cloud, artificial intelligence, and distributed architectures."
         limit={6}
+        cardVariant="compact"
       />
 
       {/* 4. Why CoralSwift Verified Engineering Standard */}
