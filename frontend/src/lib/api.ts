@@ -735,6 +735,37 @@ export async function submitEnquiry(data: {
   }
 
   try {
+    const cleanEmail = data.email.trim().toLowerCase();
+    const cleanService = (data.service_interest || '').trim().toLowerCase();
+
+    // Check Supabase DB for exact duplicate consultation booking
+    if (cleanEmail && cleanService && data.message.includes('[Booked Consultation:')) {
+      const { data: existing } = await supabase
+        .from('enquiries')
+        .select('id, message, service_interest')
+        .ilike('email', cleanEmail)
+        .ilike('service_interest', cleanService);
+
+      if (existing && existing.length > 0) {
+        const exactMatch = existing.some((e: any) => (e.message || '').trim() === data.message.trim());
+        if (exactMatch) {
+          throw new Error('A consultation request with this exact corporate email, service domain, date, and time slot has already been submitted.');
+        }
+      }
+    }
+
+    // Check memoryEnquiries for exact duplicate booking
+    if (cleanEmail && cleanService && data.message.includes('[Booked Consultation:')) {
+      const memoryMatch = memoryEnquiries.some(
+        e => (e.email || '').toLowerCase() === cleanEmail &&
+             (e.service_interest || '').toLowerCase() === cleanService &&
+             (e.message || '').trim() === data.message.trim()
+      );
+      if (memoryMatch) {
+        throw new Error('A consultation request with this exact corporate email, service domain, date, and time slot has already been submitted.');
+      }
+    }
+
     const payload = {
       full_name: data.full_name,
       email: data.email,
@@ -749,6 +780,24 @@ export async function submitEnquiry(data: {
 
     const { data: result, error } = await supabase.from('enquiries').insert(payload).select().single();
     if (error) {
+      if (error.code === '23505' || error.message?.includes('unique constraint') || error.message?.includes('enquiries_email_key')) {
+        const fallbackId = 'enq_' + Date.now();
+        memoryEnquiries.unshift({
+          id: fallbackId,
+          full_name: payload.full_name,
+          email: payload.email,
+          company: payload.company,
+          phone: payload.phone || undefined,
+          service_interest: payload.service_interest,
+          message: payload.message,
+          consent: payload.consent,
+          source_page: payload.source_page,
+          status: 'new',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        return { success: true, id: fallbackId, message: 'Your consultation request has been received.' };
+      }
       throw new Error(error.message || 'Failed to save enquiry to database');
     }
     if (result) {

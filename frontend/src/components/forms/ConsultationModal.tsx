@@ -26,28 +26,55 @@ const TIME_SLOTS = [
   '03:00 PM PST (US/West)'
 ];
 
-const getSubmittedEmails = (): string[] => {
+interface SubmittedBooking {
+  email: string;
+  service: string;
+  date: string;
+  time: string;
+}
+
+const getSubmittedBookings = (): SubmittedBooking[] => {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem('coralswift_submitted_emails');
+    const raw = localStorage.getItem('coralswift_submitted_bookings');
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 };
 
-const addSubmittedEmail = (email: string) => {
+const addSubmittedBooking = (email: string, service: string, date: string, time: string) => {
   if (typeof window === 'undefined') return;
   try {
-    const emails = getSubmittedEmails();
-    const clean = email.trim().toLowerCase();
-    if (!emails.includes(clean)) {
-      emails.push(clean);
-      localStorage.setItem('coralswift_submitted_emails', JSON.stringify(emails));
-    }
+    const bookings = getSubmittedBookings();
+    bookings.push({
+      email: email.trim().toLowerCase(),
+      service: service.trim().toLowerCase(),
+      date: date.trim(),
+      time: time.trim().toLowerCase(),
+    });
+    localStorage.setItem('coralswift_submitted_bookings', JSON.stringify(bookings));
   } catch (e) {
-    console.warn('Failed to save submitted email:', e);
+    console.warn('Failed to save submitted booking:', e);
   }
+};
+
+const hasExactDuplicateBooking = (email: string, service: string, date: string, time: string): boolean => {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanService = service.trim().toLowerCase();
+  const cleanDate = date.trim();
+  const cleanTime = time.trim().toLowerCase();
+
+  if (!cleanEmail || !cleanService || !cleanDate || !cleanTime) return false;
+
+  const bookings = getSubmittedBookings();
+  return bookings.some(
+    b =>
+      b.email.trim().toLowerCase() === cleanEmail &&
+      b.service.trim().toLowerCase() === cleanService &&
+      b.date.trim() === cleanDate &&
+      b.time.trim().toLowerCase() === cleanTime
+  );
 };
 
 export function ConsultationModal({ isOpen, onClose, defaultService }: ConsultationModalProps) {
@@ -180,6 +207,26 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
       return;
     }
 
+    const { email, serviceInterest, preferredDate, preferredTime } = formData;
+    if (hasExactDuplicateBooking(email, serviceInterest, preferredDate, preferredTime)) {
+      const duplicateMsg = 'A consultation request with this exact corporate email, service domain, date, and time slot has already been submitted.';
+      setErrors(prev => ({
+        ...prev,
+        email: duplicateMsg,
+        preferredDate: duplicateMsg,
+        preferredTime: duplicateMsg,
+        form: duplicateMsg,
+      }));
+      setTouched(prev => ({
+        ...prev,
+        email: true,
+        serviceInterest: true,
+        preferredDate: true,
+        preferredTime: true,
+      }));
+      return;
+    }
+
     setIsLoading(true);
     setErrors(prev => {
       const copy = { ...prev };
@@ -198,6 +245,7 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
         source_page: typeof window !== 'undefined' ? window.location.pathname : '/contact',
       });
       if (response && response.success) {
+        addSubmittedBooking(email, serviceInterest, preferredDate, preferredTime);
         setIsSuccess(true);
       } else {
         setErrors(prev => ({
@@ -207,10 +255,22 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
       }
     } catch (err: any) {
       const errMsg = err?.message || 'An unexpected error occurred.';
-      setErrors(prev => ({
-        ...prev,
-        form: errMsg
-      }));
+      if (errMsg.toLowerCase().includes('exact corporate email')) {
+        addSubmittedBooking(email, serviceInterest, preferredDate, preferredTime);
+        setErrors(prev => ({
+          ...prev,
+          email: errMsg,
+          preferredDate: errMsg,
+          preferredTime: errMsg,
+          form: errMsg
+        }));
+        setTouched(prev => ({ ...prev, email: true, preferredDate: true, preferredTime: true }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          form: errMsg
+        }));
+      }
     } finally {
       setIsLoading(false);
     }

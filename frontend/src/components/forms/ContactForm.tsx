@@ -20,7 +20,7 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
     phone: '',
     serviceInterest: resolvedService || '',
     message: '',
-    consent: true,
+    consent: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -196,7 +196,7 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
               phone: '',
               serviceInterest: initialService || '',
               message: '',
-              consent: true,
+              consent: false,
             });
             setErrors({});
             setTouched({});
