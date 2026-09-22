@@ -206,3 +206,58 @@ export function mapToServiceOption(input?: string): string {
   return '';
 }
 
+/**
+ * Validates that an email is a valid email format AND uses a corporate/work domain
+ * (rejects personal webmail providers like Gmail, Yahoo, Hotmail, etc.).
+ */
+export function isCorporateEmail(email: string): boolean {
+  if (!email || !email.trim()) return false;
+  const trimmed = email.trim().toLowerCase();
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmed)) return false;
+
+  const domain = trimmed.split('@').pop()?.trim();
+  if (!domain) return false;
+
+  const personalDomains = new Set([
+    'gmail.com',
+    'yahoo.com',
+    'hotmail.com',
+    'outlook.com',
+    'live.com',
+    'icloud.com',
+    'me.com',
+    'mac.com',
+    'aol.com',
+    'proton.me',
+    'protonmail.com',
+    'gmx.com',
+    'gmx.net',
+    'yandex.com',
+    'mail.com',
+    'zoho.com',
+    'mail.ru',
+    'cox.net',
+    'sbcglobal.net',
+    'comcast.net',
+    'verizon.net',
+    'rediffmail.com',
+    'yahoo.co.in',
+    'yahoo.co.uk',
+    'hotmail.co.uk',
+    'yahoo.ca',
+    'yahoo.com.au',
+    'hotmail.fr',
+    'hotmail.de',
+    'live.com.au',
+    'ymail.com',
+    'msn.com',
+    'googlemail.com',
+    'inbox.com',
+    'fastmail.com'
+  ]);
+
+  return !personalDomains.has(domain);
+}
+

@@ -475,15 +475,15 @@ ${profile.rfcDetails}`;
         </div>
       </div>
 
-      {/* Main Content Details Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
+        
+        {/* Top Grid: Overview + Sidebar Consultation Card */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Left / Main Column */}
-          <div className="lg:col-span-8 space-y-16">
-            
-            {/* 1. Architectural Scope & Overview */}
-            <div className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200/90 shadow-sm interactive-card">
+          {/* Architectural Scope & Overview (8 cols) */}
+          <div className="lg:col-span-8 bg-white rounded-3xl p-8 sm:p-10 border border-slate-200/90 shadow-sm interactive-card h-full flex flex-col justify-between">
+            <div>
               <div className="flex items-center gap-2 mb-4 text-xs font-mono uppercase tracking-wider text-coral-600 font-bold">
                 <Layers className="w-4 h-4" />
                 <span>Architectural Overview</span>
@@ -495,127 +495,17 @@ ${profile.rfcDetails}`;
                 {service.overview}
               </p>
             </div>
-
-            {/* 2. Technical Stack & Architectural Ecosystem */}
-            <div>
-              <div className="flex items-center gap-2 mb-4 text-xs font-mono uppercase tracking-wider text-coral-600 font-bold">
-                <Boxes className="w-4 h-4" />
-                <span>Curated Enterprise Stack</span>
-              </div>
-              <h2 className="text-2xl font-extrabold text-[#0B1426] font-display mb-6">
-                Technologies & Protocols
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {profile.techStack.map((tech, idx) => (
-                  <div key={idx} className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm interactive-card cursor-pointer group">
-                    <span className="text-xs font-mono font-bold uppercase text-coral-600 block mb-3">
-                      {tech.category}
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {tech.tools.map((tool, tIdx) => (
-                        <span key={tIdx} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-semibold font-mono border border-slate-200 group-hover:border-coral-300 transition-colors">
-                          {tool}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 3. Key Deliverables & Capabilities */}
-            <div>
-              <div className="flex items-center gap-2 mb-4 text-xs font-mono uppercase tracking-wider text-coral-600 font-bold">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Technical Deliverables & Capabilities</span>
-              </div>
-              <h2 className="text-2xl font-extrabold text-[#0B1426] font-display mb-6">
-                What We Build & Optimize
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {service.capabilities.map((cap, i) => (
-                  <div 
-                    key={i} 
-                    className="p-5 rounded-2xl bg-white border border-slate-200/90 flex items-start gap-3.5 shadow-sm interactive-card cursor-pointer group"
-                  >
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-semibold text-slate-800">{cap}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 5. Execution Approach */}
-            {service.approach && service.approach.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-4 text-xs font-mono uppercase tracking-wider text-coral-600 font-bold">
-                  <Workflow className="w-4 h-4" />
-                  <span>Execution Methodology</span>
-                </div>
-                <h2 className="text-2xl font-extrabold text-[#0B1426] font-display mb-6">
-                  Our Phased Delivery Framework
-                </h2>
-                <div className="space-y-4">
-                  {service.approach.map((step, idx) => (
-                    <div 
-                      key={idx} 
-                      className="p-6 rounded-2xl bg-white border border-slate-200/90 flex flex-col sm:flex-row sm:items-start gap-4 shadow-sm interactive-card cursor-pointer"
-                    >
-                      <div className="font-mono text-sm font-bold text-coral-600 bg-coral-50 px-3.5 py-1.5 rounded-xl border border-coral-200 shrink-0 self-start">
-                        {step.step || `0${idx + 1}`}
-                      </div>
-                      <div>
-                        <h4 className="text-base font-bold text-[#0B1426] font-display mb-1">
-                          {step.phase}
-                        </h4>
-                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                          {step.description}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 6. Concrete Deliverables */}
-            {service.deliverables && service.deliverables.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-4 text-xs font-mono uppercase tracking-wider text-emerald-600 font-bold">
-                  <PackageCheck className="w-4 h-4" />
-                  <span>Tangible Deliverables</span>
-                </div>
-                <h2 className="text-2xl font-extrabold text-[#0B1426] font-display mb-4">
-                  Handover Artifacts & Repositories
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {service.deliverables.map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-xs font-medium text-emerald-950">
-                      <div className="w-2 h-2 rounded-full bg-emerald-600" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 7. Requirements & Prerequisites */}
+            
             {service.requirements && (
-              <div className="p-7 rounded-3xl bg-slate-50 border border-slate-200">
-                <div className="flex items-center gap-2 mb-2 text-xs font-mono uppercase tracking-wider text-coral-700 font-bold">
-                  <HelpCircle className="w-4 h-4" />
-                  <span>Engagement Prerequisites</span>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  {service.requirements}
-                </p>
+              <div className="mt-8 pt-6 border-t border-slate-100 flex items-center gap-3 text-xs text-slate-600">
+                <HelpCircle className="w-4 h-4 text-coral-600 shrink-0" />
+                <span><strong>Engagement Note:</strong> {service.requirements}</span>
               </div>
             )}
-
           </div>
 
-          {/* Right Sidebar */}
-          <div className="lg:col-span-4 space-y-8">
+          {/* Right Sidebar: Consultation + Case Studies (4 cols) */}
+          <div className="lg:col-span-4 space-y-6">
             
             {/* Consultation Card */}
             <div className="bg-[#0B1426] text-white rounded-3xl p-7 border border-slate-800 shadow-xl relative overflow-hidden">
@@ -639,8 +529,8 @@ ${profile.rfcDetails}`;
 
             {/* Related Case Studies */}
             {relatedCaseStudies.length > 0 && (
-              <div className="space-y-4">
-                <h4 className="text-xs font-mono uppercase tracking-wider text-slate-800 font-bold">
+              <div className="space-y-3">
+                <h4 className="text-xs font-mono uppercase tracking-wider text-slate-800 font-bold px-1">
                   Proven Production Work
                 </h4>
                 {relatedCaseStudies.map((cs) => (
@@ -661,10 +551,114 @@ ${profile.rfcDetails}`;
                 ))}
               </div>
             )}
-
           </div>
-
         </div>
+
+        {/* 1. Full Width Section: Technologies & Protocols */}
+        <div>
+          <div className="flex items-center gap-2 mb-3 text-xs font-mono uppercase tracking-wider text-coral-600 font-bold">
+            <Boxes className="w-4 h-4" />
+            <span>Curated Enterprise Stack</span>
+          </div>
+          <h2 className="text-2xl font-extrabold text-[#0B1426] font-display mb-6">
+            Technologies & Protocols
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+            {profile.techStack.map((tech, idx) => (
+              <div key={idx} className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm interactive-card flex flex-col justify-between h-full hover:border-coral-300 transition-all">
+                <div>
+                  <span className="text-xs font-mono font-bold uppercase text-coral-600 block mb-3">
+                    {tech.category}
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {tech.tools.map((tool, tIdx) => (
+                      <span key={tIdx} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-semibold font-mono border border-slate-200 group-hover:border-coral-300 transition-colors">
+                        {tool}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 2. Full Width Section: What We Build & Optimize (Capabilities) */}
+        <div>
+          <div className="flex items-center gap-2 mb-3 text-xs font-mono uppercase tracking-wider text-coral-600 font-bold">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Technical Deliverables & Capabilities</span>
+          </div>
+          <h2 className="text-2xl font-extrabold text-[#0B1426] font-display mb-6">
+            What We Build & Optimize
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+            {service.capabilities.map((cap, i) => (
+              <div 
+                key={i} 
+                className="p-6 rounded-2xl bg-white border border-slate-200/90 flex items-start gap-4 shadow-sm interactive-card cursor-pointer group h-full min-h-[5.5rem] hover:border-coral-300 hover:shadow-md transition-all"
+              >
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="text-sm sm:text-base font-semibold text-slate-800 leading-snug">{cap}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 3. Full Width Section: Our Phased Delivery Framework */}
+        {service.approach && service.approach.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3 text-xs font-mono uppercase tracking-wider text-coral-600 font-bold">
+              <Workflow className="w-4 h-4" />
+              <span>Execution Methodology</span>
+            </div>
+            <h2 className="text-2xl font-extrabold text-[#0B1426] font-display mb-6">
+              Our Phased Delivery Framework
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+              {service.approach.map((step, idx) => (
+                <div 
+                  key={idx} 
+                  className="p-6 rounded-2xl bg-white border border-slate-200/90 flex flex-col justify-between gap-4 shadow-sm interactive-card cursor-pointer h-full min-h-[13rem] hover:border-coral-300 transition-all"
+                >
+                  <div>
+                    <div className="font-mono text-xs font-bold text-coral-600 bg-coral-50 px-3 py-1 rounded-lg border border-coral-200/80 w-fit mb-3">
+                      {step.step || `PHASE 0${idx + 1}`}
+                    </div>
+                    <h4 className="text-base font-bold text-[#0B1426] font-display mb-2">
+                      {step.phase}
+                    </h4>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {step.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 4. Full Width Section: Handover Artifacts & Repositories */}
+        {service.deliverables && service.deliverables.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3 text-xs font-mono uppercase tracking-wider text-emerald-600 font-bold">
+              <PackageCheck className="w-4 h-4" />
+              <span>Tangible Deliverables</span>
+            </div>
+            <h2 className="text-2xl font-extrabold text-[#0B1426] font-display mb-6">
+              Handover Artifacts & Repositories
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+              {service.deliverables.map((item, i) => (
+                <div key={i} className="flex items-center gap-3.5 p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 h-full min-h-[5.5rem] shadow-2xs hover:bg-emerald-50 transition-all">
+                  <div className="w-3 h-3 rounded-full bg-emerald-600 shrink-0 shadow-xs" />
+                  <span className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* RFC Baseline Modal */}

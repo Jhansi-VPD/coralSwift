@@ -178,6 +178,8 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
 
     try {
       const filename = resumeFile ? resumeFile.name : 'candidate_resume.pdf';
+      const cleanFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const resumePath = `/uploads/resumes/${Date.now()}_${cleanFilename}`;
       let resumeDataUrl = '';
       if (resumeFile) {
         try {
@@ -192,8 +194,6 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
         }
       }
 
-      const resumePath = resumeDataUrl || `/uploads/resumes/${Date.now()}_${filename}`;
-
       await submitApplication({
         job_id: job.id,
         full_name: formData.fullName.trim(),
@@ -205,6 +205,7 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
         resume_filename: filename,
         resume_path: resumePath,
         resume_url: resumeDataUrl || undefined,
+        resume_file: resumeFile || undefined,
       });
 
       setIsSuccess(true);

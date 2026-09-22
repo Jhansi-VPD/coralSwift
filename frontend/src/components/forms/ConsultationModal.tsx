@@ -10,7 +10,7 @@ import {
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { submitEnquiry } from '@/lib/api';
-import { SERVICE_OPTIONS, mapToServiceOption } from '@/lib/utils';
+import { SERVICE_OPTIONS, mapToServiceOption, isCorporateEmail } from '@/lib/utils';
 
 interface ConsultationModalProps {
   isOpen: boolean;
@@ -26,14 +26,41 @@ const TIME_SLOTS = [
   '03:00 PM PST (US/West)'
 ];
 
+const getSubmittedEmails = (): string[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('coralswift_submitted_emails');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const addSubmittedEmail = (email: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const emails = getSubmittedEmails();
+    const clean = email.trim().toLowerCase();
+    if (!emails.includes(clean)) {
+      emails.push(clean);
+      localStorage.setItem('coralswift_submitted_emails', JSON.stringify(emails));
+    }
+  } catch (e) {
+    console.warn('Failed to save submitted email:', e);
+  }
+};
+
 export function ConsultationModal({ isOpen, onClose, defaultService }: ConsultationModalProps) {
   const resolvedService = mapToServiceOption(defaultService);
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     company: '',
-    serviceInterest: resolvedService,
-    preferredTime: TIME_SLOTS[0],
+    serviceInterest: resolvedService || '',
+    preferredDate: '',
+    preferredTime: '',
     message: '',
   });
 
@@ -47,7 +74,7 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
       const mapped = mapToServiceOption(defaultService);
       setFormData(prev => ({
         ...prev,
-        serviceInterest: mapped || prev.serviceInterest || SERVICE_OPTIONS[0]
+        serviceInterest: mapped || ''
       }));
     }
   }, [isOpen, defaultService]);
@@ -64,6 +91,7 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
       case 'email':
         if (!value || !value.trim()) return 'Corporate email is required.';
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Please enter a valid corporate email address.';
+        if (!isCorporateEmail(value.trim())) return 'Please enter a valid corporate/work email address. Personal emails (Gmail, Yahoo, etc.) are not allowed.';
         return '';
       case 'company':
         if (!value || !value.trim()) return 'Company name is required.';
@@ -72,7 +100,14 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
         if (!/^[a-zA-Z0-9\s.,&'()/-]+$/.test(value.trim())) return 'Company name contains invalid characters.';
         return '';
       case 'serviceInterest':
-        if (!value || !value.trim()) return 'Area of interest / service domain is required.';
+        if (!value || !value.trim()) return 'Service domain of interest is required. Please select an option.';
+        return '';
+      case 'preferredDate':
+        if (!value || !value.trim()) return 'Preferred consultation date is required.';
+        if (value < todayStr) return 'Please select today or a future date for your consultation.';
+        return '';
+      case 'preferredTime':
+        if (!value || !value.trim()) return 'Preferred time slot is required. Please select a time slot.';
         return '';
       default:
         return '';
@@ -93,8 +128,21 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
     const servErr = validateField('serviceInterest', formData.serviceInterest);
     if (servErr) errs.serviceInterest = servErr;
 
+    const dateErr = validateField('preferredDate', formData.preferredDate);
+    if (dateErr) errs.preferredDate = dateErr;
+
+    const timeErr = validateField('preferredTime', formData.preferredTime);
+    if (timeErr) errs.preferredTime = timeErr;
+
     setErrors(errs);
-    setTouched({ fullName: true, email: true, company: true, serviceInterest: true });
+    setTouched({
+      fullName: true,
+      email: true,
+      company: true,
+      serviceInterest: true,
+      preferredDate: true,
+      preferredTime: true,
+    });
     return Object.keys(errs).length === 0;
   };
 
@@ -145,7 +193,7 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
         email: formData.email.trim(),
         company: formData.company.trim(),
         service_interest: formData.serviceInterest,
-        message: `[Booked Consultation Slot: ${formData.preferredTime}] - ${formData.message.trim() || 'Architecture consultation requested.'}`,
+        message: `[Booked Consultation: Date: ${formData.preferredDate}, Slot: ${formData.preferredTime}] - ${formData.message.trim() || 'Architecture consultation requested.'}`,
         consent: true,
         source_page: typeof window !== 'undefined' ? window.location.pathname : '/contact',
       });
@@ -158,9 +206,10 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
         }));
       }
     } catch (err: any) {
+      const errMsg = err?.message || 'An unexpected error occurred.';
       setErrors(prev => ({
         ...prev,
-        form: err?.message || 'An unexpected network error occurred while booking your consultation. Please try again.'
+        form: errMsg
       }));
     } finally {
       setIsLoading(false);
@@ -173,8 +222,9 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
       fullName: '',
       email: '',
       company: '',
-      serviceInterest: defaultService || '',
-      preferredTime: TIME_SLOTS[0],
+      serviceInterest: defaultService ? mapToServiceOption(defaultService) : '',
+      preferredDate: '',
+      preferredTime: '',
       message: '',
     });
     setErrors({});
@@ -198,7 +248,7 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
           </div>
           <h3 className="text-2xl font-bold text-[#0B1426] font-display">Consultation Confirmed</h3>
           <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-            Thank you, <span className="font-semibold text-slate-900">{formData.fullName}</span>. A calendar invite for <span className="font-semibold text-slate-900">{formData.preferredTime}</span> has been dispatched to <span className="font-mono text-coral-600">{formData.email}</span> along with our architecture NDA.
+            Thank you, <span className="font-semibold text-slate-900">{formData.fullName}</span>. A calendar invite for <span className="font-semibold text-slate-900">{formData.preferredDate}</span> at <span className="font-semibold text-slate-900">{formData.preferredTime}</span> has been dispatched to <span className="font-mono text-coral-600">{formData.email}</span> along with our architecture NDA.
           </p>
           <div className="pt-4">
             <Button variant="primary" data-testid="consultation-done-btn" onClick={handleResetAndClose} className="w-full sm:w-auto">
@@ -335,64 +385,127 @@ export function ConsultationModal({ isOpen, onClose, defaultService }: Consultat
             </div>
 
             <div>
+              <label htmlFor="modalServiceInterest" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
+                Service Domain of Interest <span className="text-coral-500">*</span>
+              </label>
+              <select
+                id="modalServiceInterest"
+                name="serviceInterest"
+                value={formData.serviceInterest}
+                onChange={(e) => handleChange('serviceInterest', e.target.value)}
+                onBlur={() => handleBlur('serviceInterest')}
+                aria-invalid={touched.serviceInterest && !!errors.serviceInterest}
+                aria-describedby={touched.serviceInterest && errors.serviceInterest ? 'modalServiceInterest-error' : undefined}
+                data-testid="modal-serviceInterest-select"
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-colors ${
+                  !formData.serviceInterest ? 'text-slate-400 bg-white' : 'text-slate-900 bg-white'
+                } ${
+                  touched.serviceInterest && errors.serviceInterest
+                    ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
+                    : 'border-slate-200 focus:ring-coral-500/20 focus:border-coral-500'
+                }`}
+              >
+                <option value="" disabled className="text-slate-400">
+                  -- Select an Area of Interest --
+                </option>
+                {SERVICE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt} className="text-slate-900">{opt}</option>
+                ))}
+              </select>
+              {touched.serviceInterest && errors.serviceInterest && (
+                <p
+                  id="modalServiceInterest-error"
+                  data-testid="modal-serviceInterest-error"
+                  role="alert"
+                  aria-live="polite"
+                  className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium error-message field-error"
+                >
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.serviceInterest}</span>
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="modalDate" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
+                Preferred Date <span className="text-coral-500">*</span>
+              </label>
+              <input
+                id="modalDate"
+                name="preferredDate"
+                type="date"
+                min={todayStr}
+                value={formData.preferredDate}
+                onChange={(e) => handleChange('preferredDate', e.target.value)}
+                onBlur={() => handleBlur('preferredDate')}
+                aria-invalid={touched.preferredDate && !!errors.preferredDate}
+                aria-describedby={touched.preferredDate && errors.preferredDate ? 'modalDate-error' : undefined}
+                data-testid="modal-preferredDate-input"
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-colors ${
+                  !formData.preferredDate ? 'text-slate-400 bg-white' : 'text-slate-900 bg-white'
+                } ${
+                  touched.preferredDate && errors.preferredDate
+                    ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
+                    : 'border-slate-200 focus:ring-coral-500/20 focus:border-coral-500'
+                }`}
+              />
+              {touched.preferredDate && errors.preferredDate && (
+                <p
+                  id="modalDate-error"
+                  data-testid="modal-preferredDate-error"
+                  role="alert"
+                  aria-live="polite"
+                  className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium error-message field-error"
+                >
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.preferredDate}</span>
+                </p>
+              )}
+            </div>
+
+            <div>
               <label htmlFor="modalTimeSlot" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
-                Preferred Time Slot
+                Preferred Time Slot <span className="text-coral-500">*</span>
               </label>
               <select
                 id="modalTimeSlot"
                 name="preferredTime"
                 value={formData.preferredTime}
                 onChange={(e) => handleChange('preferredTime', e.target.value)}
+                onBlur={() => handleBlur('preferredTime')}
+                aria-invalid={touched.preferredTime && !!errors.preferredTime}
+                aria-describedby={touched.preferredTime && errors.preferredTime ? 'modalTimeSlot-error' : undefined}
                 data-testid="modal-timeslot-select"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500/20 focus:border-coral-500"
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-colors ${
+                  !formData.preferredTime ? 'text-slate-400 bg-white' : 'text-slate-900 bg-white'
+                } ${
+                  touched.preferredTime && errors.preferredTime
+                    ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
+                    : 'border-slate-200 focus:ring-coral-500/20 focus:border-coral-500'
+                }`}
               >
+                <option value="" disabled className="text-slate-400">
+                  -- Select Preferred Time Slot --
+                </option>
                 {TIME_SLOTS.map((slot) => (
-                  <option key={slot} value={slot}>{slot}</option>
+                  <option key={slot} value={slot} className="text-slate-900">{slot}</option>
                 ))}
               </select>
+              {touched.preferredTime && errors.preferredTime && (
+                <p
+                  id="modalTimeSlot-error"
+                  data-testid="modal-preferredTime-error"
+                  role="alert"
+                  aria-live="polite"
+                  className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium error-message field-error"
+                >
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{errors.preferredTime}</span>
+                </p>
+              )}
             </div>
-          </div>
-
-          <div>
-            <label htmlFor="modalServiceInterest" className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
-              Service Domain of Interest <span className="text-coral-500">*</span>
-            </label>
-            <select
-              id="modalServiceInterest"
-              name="serviceInterest"
-              value={formData.serviceInterest}
-              onChange={(e) => handleChange('serviceInterest', e.target.value)}
-              onBlur={() => handleBlur('serviceInterest')}
-              aria-invalid={touched.serviceInterest && !!errors.serviceInterest}
-              aria-describedby={touched.serviceInterest && errors.serviceInterest ? 'modalServiceInterest-error' : undefined}
-              data-testid="modal-serviceInterest-select"
-              className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-colors ${
-                !formData.serviceInterest ? 'text-slate-400 bg-white' : 'text-slate-900 bg-white'
-              } ${
-                touched.serviceInterest && errors.serviceInterest
-                  ? 'border-red-400 focus:ring-red-400/20 focus:border-red-500 bg-red-50/20'
-                  : 'border-slate-200 focus:ring-coral-500/20 focus:border-coral-500'
-              }`}
-            >
-              <option value="" disabled className="text-slate-400">
-                -- Select an Area of Interest --
-              </option>
-              {SERVICE_OPTIONS.map((opt) => (
-                <option key={opt} value={opt} className="text-slate-900">{opt}</option>
-              ))}
-            </select>
-            {touched.serviceInterest && errors.serviceInterest && (
-              <p
-                id="modalServiceInterest-error"
-                data-testid="modal-serviceInterest-error"
-                role="alert"
-                aria-live="polite"
-                className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium error-message field-error"
-              >
-                <AlertCircle className="w-3 h-3 shrink-0" />
-                <span>{errors.serviceInterest}</span>
-              </p>
-            )}
           </div>
 
           <div>

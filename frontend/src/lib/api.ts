@@ -378,9 +378,9 @@ export async function submitApplication(appData: {
   resume_filename: string;
   resume_path: string;
   resume_url?: string;
+  resume_file?: File;
 }): Promise<{ success: boolean; id: string; message: string }> {
   const supabase = createClient();
-  const now = new Date().toISOString();
 
   if (!supabase) {
     throw new Error('Service temporarily unavailable. Please try again later.');
@@ -402,15 +402,37 @@ export async function submitApplication(appData: {
       if (foundJob) validJobId = foundJob.id;
     }
 
+    const cleanFilename = (appData.resume_filename || 'resume.pdf').replace(/[^a-zA-Z0-9._-]/g, '_');
+    let finalResumePath = appData.resume_path;
+
+    if (!finalResumePath || finalResumePath.startsWith('data:')) {
+      finalResumePath = `/uploads/resumes/${Date.now()}_${cleanFilename}`;
+    }
+
+    if (appData.resume_file) {
+      try {
+        const storagePath = `resumes/${Date.now()}_${cleanFilename}`;
+        const { data: storageData, error: storageErr } = await supabase.storage
+          .from('resumes')
+          .upload(storagePath, appData.resume_file, { upsert: true });
+
+        if (!storageErr && storageData?.path) {
+          finalResumePath = storageData.path;
+        }
+      } catch (stErr) {
+        console.warn('Supabase storage upload notice:', stErr);
+      }
+    }
+
     const payload: any = {
-      full_name: appData.full_name,
-      email: appData.email,
-      phone: appData.phone || null,
-      portfolio_url: appData.portfolio_url || null,
-      linkedin_url: appData.linkedin_url || null,
+      full_name: appData.full_name.slice(0, 255),
+      email: appData.email.slice(0, 255),
+      phone: appData.phone ? appData.phone.slice(0, 50) : null,
+      portfolio_url: appData.portfolio_url ? appData.portfolio_url.slice(0, 255) : null,
+      linkedin_url: appData.linkedin_url ? appData.linkedin_url.slice(0, 255) : null,
       cover_note: appData.cover_note || null,
-      resume_filename: appData.resume_filename,
-      resume_path: appData.resume_path || appData.resume_url || `/uploads/resumes/${appData.resume_filename}`,
+      resume_filename: cleanFilename.slice(0, 255),
+      resume_path: finalResumePath.slice(0, 500),
       status: 'submitted',
     };
     if (validJobId) {
@@ -707,7 +729,6 @@ export async function submitEnquiry(data: {
   source_page?: string;
 }): Promise<{ success: boolean; id: string; message: string }> {
   const supabase = createClient();
-  const now = new Date().toISOString();
 
   if (!supabase) {
     throw new Error('Service temporarily unavailable. Please try again later.');
@@ -731,6 +752,7 @@ export async function submitEnquiry(data: {
       throw new Error(error.message || 'Failed to save enquiry to database');
     }
     if (result) {
+      memoryEnquiries.unshift(result);
       return { success: true, id: result.id, message: 'Your enquiry has been received.' };
     }
   } catch (e) {

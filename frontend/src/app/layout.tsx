@@ -10,13 +10,17 @@ import { FloatingChatbot } from "@/components/interactive/FloatingChatbot";
 const inter = Inter({ 
   subsets: ["latin"],
   variable: "--font-inter",
-  display: "swap"
+  display: "swap",
+  fallback: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+  adjustFontFallback: false
 });
 
 const outfit = Outfit({ 
   subsets: ["latin"],
   variable: "--font-outfit",
-  display: "swap"
+  display: "swap",
+  fallback: ["system-ui", "sans-serif"],
+  adjustFontFallback: false
 });
 
 export const metadata: Metadata = {

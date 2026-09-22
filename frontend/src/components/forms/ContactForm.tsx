@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Send, CheckCircle2, AlertCircle, Lock, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { submitEnquiry } from '@/lib/api';
-import { SERVICE_OPTIONS, mapToServiceOption } from '@/lib/utils';
+import { SERVICE_OPTIONS, mapToServiceOption, isCorporateEmail } from '@/lib/utils';
 
 interface ContactFormProps {
   initialService?: string;
@@ -18,7 +18,7 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
     email: '',
     company: '',
     phone: '',
-    serviceInterest: resolvedService,
+    serviceInterest: resolvedService || '',
     message: '',
     consent: true,
   });
@@ -38,8 +38,9 @@ export function ContactForm({ initialService = '', sourcePage = '/contact' }: Co
         return '';
 
       case 'email':
-        if (!value || !value.trim()) return 'Work email is required.';
+        if (!value || !value.trim()) return 'Corporate email is required.';
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Please enter a valid email address (e.g., name@company.com).';
+        if (!isCorporateEmail(value.trim())) return 'Please enter a valid corporate/work email address. Personal emails (Gmail, Yahoo, etc.) are not accepted.';
         return '';
 
       case 'company':
