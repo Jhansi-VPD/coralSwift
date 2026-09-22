@@ -728,6 +728,25 @@ export async function submitEnquiry(data: {
   consent: boolean;
   source_page?: string;
 }): Promise<{ success: boolean; id: string; message: string }> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/enquiries/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || 'Failed to submit enquiry.');
+      }
+      return json;
+    } catch (e: any) {
+      if (e.message && (e.message.includes('exact corporate email') || e.message.includes('already been submitted'))) {
+        throw e;
+      }
+    }
+  }
+
   const supabase = createClient();
 
   if (!supabase) {
@@ -743,11 +762,20 @@ export async function submitEnquiry(data: {
       const { data: existing } = await supabase
         .from('enquiries')
         .select('id, message, service_interest')
-        .ilike('email', cleanEmail)
-        .ilike('service_interest', cleanService);
+        .ilike('email', cleanEmail);
 
       if (existing && existing.length > 0) {
-        const exactMatch = existing.some((e: any) => (e.message || '').trim() === data.message.trim());
+        const exactMatch = existing.some((e: any) => {
+          const s = (e.service_interest || '').trim().toLowerCase();
+          const m = (e.message || '').trim();
+          if (s !== cleanService) return false;
+          const dateMatch = data.message.match(/Date:\s*([^,\]]+)/);
+          const slotMatch = data.message.match(/Slot:\s*([^,\]]+)/);
+          if (dateMatch && slotMatch) {
+            return m.includes(`Date: ${dateMatch[1].trim()}`) && m.includes(`Slot: ${slotMatch[1].trim()}`);
+          }
+          return m === data.message.trim();
+        });
         if (exactMatch) {
           throw new Error('A consultation request with this exact corporate email, service domain, date, and time slot has already been submitted.');
         }
