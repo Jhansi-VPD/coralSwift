@@ -25,8 +25,8 @@ export function Footer() {
           {/* Brand & Overview */}
           <div className="lg:col-span-2 flex flex-col gap-3.5">
             <div className="flex flex-col gap-2.5">
-              <Link href="/" className="inline-block bg-white p-2.5 px-3.5 rounded-2xl border border-slate-700/40 shadow-sm w-fit transition-transform hover:scale-[1.01]">
-                <Logo size="lg" showSponsored={false} />
+              <Link href="/" className="inline-block bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-md w-fit transition-transform hover:scale-[1.01]">
+                <Logo size="md" showSponsored={false} showTagline={true} />
               </Link>
               <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
                 <span>Officially Partnered by</span>
