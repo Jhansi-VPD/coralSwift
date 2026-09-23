@@ -16,6 +16,7 @@ import {
   Cpu
 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
+import { createClient } from '@/lib/supabase/client';
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -31,9 +32,17 @@ export function AdminSidebar() {
     { name: 'Audit Logs', href: '/admin/audit-logs', icon: ShieldAlert },
   ];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('coralswift_admin_auth');
+    }
+    try {
+      const supabase = createClient();
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch {
+      // ignore
     }
     router.push('/admin/login');
   };

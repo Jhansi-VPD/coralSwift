@@ -58,16 +58,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Fallback / Direct Admin Authentication (Zero-config support for Vercel & Local)
+    // 2. Check Environment Variables (ADMIN_EMAIL & ADMIN_PASSWORD) if set
     if (!authenticatedEmail) {
-      const configuredEmail = process.env.ADMIN_EMAIL || 'admin@coralswift.com';
-      const configuredPassword = process.env.ADMIN_PASSWORD || 'CoralAdmin2026!';
+      const configuredEmail = process.env.ADMIN_EMAIL;
+      const configuredPassword = process.env.ADMIN_PASSWORD;
 
-      const isEmailMatch = email.trim().toLowerCase() === configuredEmail.trim().toLowerCase();
-      const isPasswordMatch = password === configuredPassword;
+      if (configuredEmail && configuredPassword) {
+        const isEmailMatch = email.trim().toLowerCase() === configuredEmail.trim().toLowerCase();
+        const isPasswordMatch = password === configuredPassword;
 
-      if (isEmailMatch && isPasswordMatch) {
-        authenticatedEmail = configuredEmail;
+        if (isEmailMatch && isPasswordMatch) {
+          authenticatedEmail = configuredEmail;
+        }
       }
     }
 
@@ -104,6 +106,7 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   } catch (error: any) {
+    console.error('Admin login handler error:', error);
     return NextResponse.json(
       { error: error.message || 'Authentication error' },
       { status: 500 }
