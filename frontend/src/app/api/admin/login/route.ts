@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Check Environment Variables (ADMIN_EMAIL & ADMIN_PASSWORD) if set
+    // 2. Check Environment Variables (ADMIN_EMAIL & ADMIN_PASSWORD) - Server-side only
     if (!authenticatedEmail) {
       const configuredEmail = process.env.ADMIN_EMAIL;
       const configuredPassword = process.env.ADMIN_PASSWORD;
