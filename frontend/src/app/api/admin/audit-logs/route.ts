@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { initialAuditLogs } from '@/lib/mock-data';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const adminClient = createAdminClient();
