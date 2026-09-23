@@ -66,9 +66,11 @@ export function Logo({
       />
       <div className="flex flex-col items-center justify-center leading-none">
         <div className={cn('flex items-center leading-none', selectedDim.titleClass)}>
-          <span className={isDark ? 'text-white' : 'text-slate-950'}>Coral</span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-coral-500 via-coral-600 to-amber-500">
-            Swift
+          <span
+            className="font-black"
+            style={{ color: isDark ? '#FFFFFF' : '#0B1426' }}
+          >
+            CoralSwift
           </span>
         </div>
         {showTagline && (
