@@ -19,19 +19,14 @@
  */
 
 export const SESSION_COOKIE_NAME = 'coralswift_admin_session';
-const SESSION_SECRET =
-  process.env.ADMIN_SESSION_SECRET ||
-  process.env.ADMIN_PASSWORD ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  'coralswift_session_hmac_secret_2026';
+const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET;
 
 /**
  * Creates a cryptographically signed HMAC token for admin session
  */
 export async function createSessionToken(email: string): Promise<string> {
   if (!SESSION_SECRET) {
-    throw new Error('ADMIN_SESSION_SECRET or ADMIN_PASSWORD environment variable is required');
+    throw new Error('ADMIN_SESSION_SECRET environment variable is required');
   }
 
   const encoder = new TextEncoder();
