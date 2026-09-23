@@ -39,4 +39,4 @@ The frontend application runs on `http://localhost:3000` (or next available port
 
 ### Database & Supabase
 - Migrations: `supabase/migrations/`
-- Seed data: `supabase/seed.sql`
+- Seed data: `supabase/seed.sql` 
