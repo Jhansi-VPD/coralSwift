@@ -64,8 +64,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 1. Open your project on [supabase.com](https://supabase.com).
 2. Go to **SQL Editor** -> Create New Query.
-3. Run `supabase/migrations/20260908000000_coralswift_schema.sql` to create all PostgreSQL tables, indexes, and RLS policies.
-4. Run `supabase/seed.sql` to populate the initial baseline enterprise dataset.
+3. Run the SQL in `supabase/migrations/20260908000000_coralswift_schema.sql` (repo root) to create all PostgreSQL tables, indexes, and RLS policies.
+4. Run the SQL in `supabase/seed.sql` (repo root) to populate the initial baseline enterprise dataset.
 5. Create storage buckets `resumes` (private) and `media` (public) under Supabase Storage.
 
 ---

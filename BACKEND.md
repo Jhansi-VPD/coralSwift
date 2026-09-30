@@ -2,8 +2,6 @@
 
 The complete backend is a **standalone Python service** (FastAPI + Supabase) with interactive **Swagger UI**. The Next.js app under `frontend/` is a pure UI client — it hosts no API routes and talks to the FastAPI service over HTTP with `Authorization: Bearer <token>`.
 
-> The retired TypeScript/Next.js backend is preserved read-only in [`legacy-nextjs-backend/`](legacy-nextjs-backend/) for reference, including the Supabase migrations (the FastAPI service uses the same database).
-
 ## Layout
 
 ```
@@ -23,7 +21,7 @@ CoralSwift/
 │   ├── run.py                    # uvicorn launcher (host/port from .env)
 │   ├── seed_backend_users.py     # idempotent demo-data seeder
 │   └── .env.example
-├── legacy-nextjs-backend/        # retired TS backend (reference) + supabase/migrations
+├── supabase/                     # SQL migrations + all_migrations.sql (single paste)
 └── frontend/                     # Next.js UI — no /api routes
 ```
 
@@ -71,7 +69,7 @@ Browser (Next.js UI, portal-client.ts / api.ts)
 
 ## Database
 
-22 tables, unchanged migrations in [`legacy-nextjs-backend/supabase/migrations/`](legacy-nextjs-backend/supabase/migrations/). People/HR/Sales/Delivery/Finance/Support/Shared groups plus `enquiry_status_history` and `project_updates`. Storage: `resumes` (applications) and `documents` (private, 10-minute signed URLs).
+22 tables, migrations in [`supabase/migrations/`](supabase/migrations/). People/HR/Sales/Delivery/Finance/Support/Shared groups plus `enquiry_status_history` and `project_updates`. Storage: `resumes` (applications) and `documents` (private, 10-minute signed URLs).
 
 ## API Surface (51 paths)
 
@@ -129,10 +127,9 @@ Browser (Next.js UI, portal-client.ts / api.ts)
 ## Setup
 
 ```bash
-# 1. Apply the database schema: open backend/supabase/all_migrations.sql,
+# 1. Apply the database schema: open supabase/all_migrations.sql,
 #    copy everything, paste into Supabase Dashboard → SQL Editor → Run.
-#    (Individual ordered files: backend/supabase/migrations/ — the originals
-#    also remain in legacy-nextjs-backend/supabase/migrations/)
+#    (Individual ordered files: supabase/migrations/)
 
 # 2. Environment
 cd backend

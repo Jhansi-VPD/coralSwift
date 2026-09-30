@@ -29,10 +29,12 @@ backend/
 │   ├── seed.py                  # demo data (idempotent)
 │   └── create_admin.py          # create/promote an admin
 ├── tests/                       # pytest: api/ + unit/ (offline, dependency-overridden)
-├── supabase/                    # SQL migrations + all_migrations.sql (single paste)
 ├── requirements.txt             # pinned
 ├── Dockerfile · docker-compose.yml
 └── .env.example
+
+SQL migrations live in the repo-root `../supabase/` folder
+(`migrations/` + `all_migrations.sql` for a single-paste setup).
 ```
 
 **Layering:** `API (thin) → Service → Repository → Supabase`.
@@ -93,7 +95,7 @@ Never bake secrets into the image.
 
 ## Database
 
-Migrations in `supabase/migrations/` (apply in order) or paste the combined
-`supabase/all_migrations.sql` into the Supabase SQL Editor. The 22-table schema
+Migrations in `../supabase/migrations/` (apply in order) or paste the combined
+`../supabase/all_migrations.sql` into the Supabase SQL Editor. The 22-table schema
 is unchanged by this refactor; `Alembic` is deferred until a direct-Postgres
 connection (`DATABASE_URL`) is actually introduced.

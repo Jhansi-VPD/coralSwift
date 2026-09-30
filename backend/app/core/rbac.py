@@ -1,4 +1,4 @@
-"""RBAC permission matrix — mirrors legacy-nextjs-backend/src/lib/rbac.ts."""
+"""RBAC permission matrix — historically mirrored the retired legacy Next.js backend (see git history)."""
 
 HR_PERMS = [
     "employees.read", "employees.write", "leave.approve", "attendance.read.all",
