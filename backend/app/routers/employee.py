@@ -45,7 +45,7 @@ def my_tasks(status: str | None = None, user: SessionUser = Depends(require_role
         query = sb.table("tasks").select(TASK_SELECT).eq("assignee_id", me["id"])
         if status:
             query = query.eq("status", status)
-        res = query.order("due_date", desc_first=False, nulls_first=False).execute()
+        res = query.order("due_date", desc=False, nullsfirst=False).execute()
     except Exception as e:
         raise_db_error(e)
     return res.data or []
