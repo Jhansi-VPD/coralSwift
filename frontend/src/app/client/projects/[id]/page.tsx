@@ -23,7 +23,7 @@ type Detail = { project: {
   expected_completion_date: string | null;
   start_date: string | null; target_end_date: string | null;
   milestones: ProjectRecord['milestones'];
-  updates: { id: string; title: string; body: string | null; created_at: string; author: { full_name: string } | null }[];
+  updates: { id: string; title: string; body: string | null; created_at: string; author_role?: string | null; author: { full_name: string } | null }[];
 } };
 
 export default function ClientProjectTrackerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -164,6 +164,9 @@ export default function ClientProjectTrackerPage({ params }: { params: Promise<{
                         <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap">{formatTimeAgo(u.created_at)}</span>
                       </div>
                       {u.body && <p className="text-xs text-slate-600 mt-1">{u.body}</p>}
+                      {u.author_role === 'manager' && (
+                        <span className="text-[9px] font-mono uppercase font-bold text-emerald-600 mt-1 inline-block">posted by your delivery manager</span>
+                      )}
                     </div>
                   ))}
                 </div>

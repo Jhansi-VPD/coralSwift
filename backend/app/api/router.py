@@ -12,9 +12,9 @@ from app.api.v1 import auth as v1_auth
 from app.api.v1 import dashboard as v1_dashboard
 from app.api.v1 import health as v1_health
 from app.api.v1 import notifications as v1_notifications
-from app.routers import admin, auth, client, content, employee, hr, manager, public, sales
+from app.routers import admin, announcements, auth, client, content, employee, exports, hr, manager, project_updates, public, sales
 
-LEGACY_MODULES = (auth, admin, client, content, employee, hr, manager, public, sales)
+LEGACY_MODULES = (auth, admin, announcements, client, content, employee, exports, hr, manager, project_updates, public, sales)
 
 api_router = APIRouter()
 

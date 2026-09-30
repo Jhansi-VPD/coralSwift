@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FolderKanban, ReceiptText, FileText, Building2 } from 'lucide-react';
 import { PortalShell } from '@/components/portal/PortalShell';
+import { AnnouncementsBanner } from '@/components/portal/AnnouncementsBanner';
 import { StatCard, SectionCard, StatusBadge, LoadingState, ErrorState, EmptyState, ProgressBar } from '@/components/portal';
 import { portalClient, formatMoney } from '@/lib/portal-client';
 import { formatDate } from '@/lib/utils';
@@ -67,6 +68,7 @@ export default function ClientDashboardPage() {
       subtitle={data?.organization ? `${data.organization.name}${data.organization.industry ? ` · ${data.organization.industry}` : ''}` : 'Your projects, invoices, and support.'}
       actions={<button onClick={load} className="text-xs font-semibold text-slate-600 hover:text-slate-900">Refresh</button>}
     >
+      <AnnouncementsBanner max={2} />
       {loading && <LoadingState label="Loading your projects…" />}
       {error && <ErrorState message={error} onRetry={load} />}
 

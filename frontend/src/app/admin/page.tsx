@@ -10,6 +10,7 @@ import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { StatCard, SectionCard, StatusBadge, LoadingState, ErrorState, EmptyState } from '@/components/portal';
+import { BarChartCard, DonutChartCard } from '@/components/portal/Charts';
 import { portalClient, formatMoney, type AdminStats } from '@/lib/portal-client';
 import { formatTimeAgo } from '@/lib/utils';
 
@@ -22,12 +23,16 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tracking, setTracking] = useState<{ total: number; openCount: number } | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
     setError(null);
     try {
       setStats(await portalClient.get<AdminStats>('/api/admin/stats'));
+      portalClient.get<{ total: number; openCount: number }>('/api/tracking/summary')
+        .then(setTracking)
+        .catch(() => setTracking(null));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load statistics');
     } finally {
@@ -61,6 +66,46 @@ export default function AdminDashboardPage() {
                 <StatCard label="Active Projects" value={stats.business.activeProjects} accent="coral" icon={<FolderKanban className="w-4 h-4" />} />
                 <StatCard label="Completed Projects" value={stats.business.completedProjects} accent="cyan" icon={<FolderKanban className="w-4 h-4" />} />
               </div>
+            </section>
+
+            {/* Charts — pipeline shape, project health, invoice mix */}
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <SectionCard title="Leads by Stage" className="lg:col-span-2">
+                <BarChartCard
+                  data={Object.entries(stats.sales.byStage).map(([stage, count]) => ({
+                    label: stage.replace('_', ' '),
+                    value: count,
+                  }))}
+                />
+              </SectionCard>
+              <SectionCard title="Project Health">
+                <DonutChartCard
+                  data={[
+                    { label: 'On track', value: stats.projects.byHealth['on_track'] ?? 0, color: '#10B981' },
+                    { label: 'At risk', value: stats.projects.byHealth['at_risk'] ?? 0, color: '#F59E0B' },
+                    { label: 'Critical', value: stats.projects.byHealth['critical'] ?? 0, color: '#EC4899' },
+                  ]}
+                />
+              </SectionCard>
+            </section>
+
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <SectionCard title="Invoice Status Mix">
+                <DonutChartCard
+                  data={Object.entries(stats.finance.byStatus).map(([status, count]) => ({
+                    label: status.replace('_', ' '),
+                    value: count,
+                  }))}
+                />
+              </SectionCard>
+              <SectionCard title="Support Tickets">
+                <DonutChartCard
+                  data={Object.entries(stats.support).map(([status, count]) => ({
+                    label: status.replace('_', ' '),
+                    value: count,
+                  }))}
+                />
+              </SectionCard>
             </section>
 
             {/* Sales + Projects */}
@@ -141,6 +186,19 @@ export default function AdminDashboardPage() {
                 accent="amber"
                 icon={<CalendarClock className="w-4 h-4" />}
               />
+            </section>
+
+            {/* Project tracking workflow — admin sees all details */}
+            <section className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <StatCard label="Tracking Updates" value={tracking?.total ?? '—'} sub="all projects, all roles" accent="indigo" icon={<Layers className="w-4 h-4" />} />
+              <StatCard label="Open Updates" value={tracking?.openCount ?? '—'} sub="awaiting manager review" accent="amber" icon={<Clock className="w-4 h-4" />} />
+              <Link href="/admin/tracking" className="block">
+                <div className="bg-[#0B1426] rounded-2xl p-6 h-full flex flex-col justify-between hover:opacity-95 transition-opacity">
+                  <div className="text-xs font-mono uppercase font-bold tracking-wider text-slate-400 mb-3">Full detail</div>
+                  <div className="text-sm font-bold text-white font-display">Open tracking audit →</div>
+                  <div className="text-[11px] text-slate-400 font-mono mt-2">employee · QA · manager · client — every update</div>
+                </div>
+              </Link>
             </section>
 
             {/* Recent activity */}

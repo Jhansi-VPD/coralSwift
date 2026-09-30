@@ -6,6 +6,7 @@ import { PortalShell } from '@/components/portal/PortalShell';
 import { StatusBadge, LoadingState, ErrorState, EmptyState, TableShell } from '@/components/portal';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { ExportButton } from '@/components/portal/ExportButton';
 import { portalClient } from '@/lib/portal-client';
 import { formatDate } from '@/lib/utils';
 
@@ -73,12 +74,15 @@ export default function HRLeavePage() {
       title="Leave Management"
       subtitle="Approve or reject leave requests. Annual approvals deduct from balances automatically."
       actions={
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold focus:outline-none shadow-xs">
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="all">All</option>
-        </select>
+        <div className="flex items-center gap-2">
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold focus:outline-none shadow-xs">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">All</option>
+          </select>
+          <ExportButton resource="leave" label="CSV" />
+        </div>
       }
     >
       {loading && <LoadingState />}

@@ -182,8 +182,10 @@ def patch_enquiry(enquiry_id: str, body: EnquiryPatch, request: Request, user: S
             "assigned_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
             "status": "assigned_to_sales",
         }
-        from app.core.helpers import notify
-        notify(body.assignTo, "New enquiry assigned", f"{enquiry['full_name']} ({enquiry['company']}) assigned by {user.full_name or 'admin'}.", "general", "/sales/enquiries")
+        from app.services.email_service import notify_and_email
+        notify_and_email(sb, body.assignTo, t.get("email"), "New enquiry assigned",
+                         f"{enquiry['full_name']} ({enquiry['company']}) assigned by {user.full_name or 'admin'}.",
+                         "general", "/sales/enquiries")
         note = f"Assigned to {t.get('full_name') or t.get('role')}"
 
     if body.status:

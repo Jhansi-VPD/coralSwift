@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FolderKanban, ClipboardList, Users, AlertTriangle, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { PortalShell } from '@/components/portal/PortalShell';
+import { AnnouncementsBanner } from '@/components/portal/AnnouncementsBanner';
 import { StatCard, SectionCard, StatusBadge, LoadingState, ErrorState, EmptyState, ProgressBar } from '@/components/portal';
 import { portalClient } from '@/lib/portal-client';
 import { formatDate } from '@/lib/utils';
@@ -74,6 +75,7 @@ export default function ManagerDashboardPage() {
       subtitle="Your projects, team workload, and pending approvals at a glance."
       actions={<button onClick={load} className="text-xs font-semibold text-slate-600 hover:text-slate-900">Refresh</button>}
     >
+      <AnnouncementsBanner max={2} />
       {loading && <LoadingState label="Loading delivery data…" />}
       {error && <ErrorState message={error} onRetry={load} />}
 

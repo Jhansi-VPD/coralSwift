@@ -21,7 +21,7 @@ from app.core.config import settings
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
-ROLES = ("admin", "hr", "sales", "manager", "employee", "client")
+ROLES = ("admin", "hr", "sales", "manager", "employee", "client", "qa")
 
 
 @dataclass

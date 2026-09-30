@@ -1,4 +1,7 @@
-"""RBAC permission matrix — historically mirrored the retired legacy Next.js backend (see git history)."""
+"""RBAC permission matrix — historically mirrored the retired legacy Next.js backend (see git history).
+
+Includes the QA role (project-tracking reviews) and Sales' invoice write
+permission (finance loop handled by admin/sales today)."""
 
 HR_PERMS = [
     "employees.read", "employees.write", "leave.approve", "attendance.read.all",
@@ -20,19 +23,24 @@ EMPLOYEE_PERMS = [
     "tasks.read.own", "tasks.update.own", "timesheets.own", "leave.own",
 ]
 
+QA_PERMS = [
+    "projects.read.all", "tasks.read.own", "tasks.update.own", "documents.own",
+]
+
 CLIENT_PERMS = [
     "client.projects.read", "client.invoices.read",
     "client.tickets", "client.documents.read",
 ]
 
 ROLE_PERMISSIONS: dict[str, list[str]] = {
-    "admin": sorted(set(HR_PERMS + SALES_PERMS + MANAGER_PERMS + EMPLOYEE_PERMS + CLIENT_PERMS) | {
+    "admin": sorted(set(HR_PERMS + SALES_PERMS + MANAGER_PERMS + EMPLOYEE_PERMS + QA_PERMS + CLIENT_PERMS) | {
         "users.manage", "settings.write", "audit.read",
     }),
     "hr": HR_PERMS,
     "sales": SALES_PERMS,
     "manager": MANAGER_PERMS,
     "employee": EMPLOYEE_PERMS,
+    "qa": QA_PERMS,
     "client": CLIENT_PERMS,
 }
 
@@ -43,6 +51,7 @@ ROLE_HOME: dict[str, str] = {
     "manager": "/manager",
     "employee": "/employee",
     "client": "/client",
+    "qa": "/qa",
 }
 
 # Fallback map served by GET /api/admin/settings before any rows exist

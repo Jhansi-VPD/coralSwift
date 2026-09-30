@@ -20,7 +20,7 @@ from app.core.logging import configure_logging, get_logger
 
 DESCRIPTION = """Complete backend for the CoralSwift enterprise platform.
 
-Roles: **admin · hr · sales · manager · employee · client**
+Roles: **admin · hr · sales · manager · employee · qa · client**
 
 ### Authentication
 Send `Authorization: Bearer <token>` on every request. Obtain a token via
@@ -39,6 +39,9 @@ credentials supported).
 - **manager** — projects, tasks, approvals, team, reviews
 - **employee** — tasks, timesheets, leave, attendance, documents, profile
 - **client** — org overview, project review, tickets, documents
+- **tracking** — project tracking & updates workflow (employee/QA/manager → client)
+- **announcements** — admin/HR broadcast posts with per-role targeting
+- **exports** — CSV downloads for every table + .ics calendar / Google links
 - **public** — website enquiry + job application intake
 - **content** — services, jobs, case studies (marketing site)
 - **notifications / dashboard** — shared v1 modules
@@ -194,6 +197,9 @@ app = FastAPI(
         {"name": "client", "description": "Client portal (client — org-scoped)"},
         {"name": "public", "description": "Public website intake (no auth, rate-limited)"},
         {"name": "content", "description": "Marketing site content APIs"},
+        {"name": "tracking", "description": "Project tracking & updates workflow"},
+        {"name": "announcements", "description": "Admin/HR broadcast announcements"},
+        {"name": "exports", "description": "CSV exports + calendar sync"},
         {"name": "notifications", "description": "Shared notification inbox (v1)"},
         {"name": "dashboard", "description": "Shell bootstrap aggregate (v1)"},
         {"name": "health", "description": "Service health"},

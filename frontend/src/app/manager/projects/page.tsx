@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { StatusBadge, LoadingState, ErrorState, EmptyState, TableShell, ProgressBar } from '@/components/portal';
+import { ExportButton } from '@/components/portal/ExportButton';
 import { portalClient, type ProjectRecord } from '@/lib/portal-client';
 import { formatDate } from '@/lib/utils';
 
@@ -26,7 +27,12 @@ export default function ManagerProjectsPage() {
   useEffect(() => { load(); }, []);
 
   return (
-    <PortalShell role="manager" title="Projects" subtitle="Plan, execute, and submit projects for client review.">
+    <PortalShell
+      role="manager"
+      title="Projects"
+      subtitle="Plan, execute, and submit projects for client review."
+      actions={<ExportButton resource="projects" label="CSV" />}
+    >
       {loading && <LoadingState />}
       {error && <ErrorState message={error} onRetry={load} />}
       {!loading && !error && projects.length === 0 && (

@@ -30,6 +30,14 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
     frontend_url: str | None = None
 
+    # Email (SMTP) — optional; emails are skipped with a log line when unset.
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str | None = None
+    smtp_from_name: str = "CoralSwift"
+
     # Server
     host: str = "127.0.0.1"
     port: int = 8000

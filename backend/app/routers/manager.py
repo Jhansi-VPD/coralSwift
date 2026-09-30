@@ -421,7 +421,9 @@ def decide_approval(body: ApprovalDecision, request: Request, user: SessionUser 
             row = res.data[0]
             emp = sb.table("employees").select("profile_id").eq("id", row["employee_id"]).maybe_single().execute()
             if (emp.data or {}).get("profile_id"):
-                notify(emp.data["profile_id"], f"Timesheet {body.decision}", "Your timesheet entry was {dec}.".format(dec=body.decision), "timesheet", "/employee/timesheets")
+                from app.services.email_service import notify_and_email
+                notify_and_email(sb, emp.data["profile_id"], None, f"Timesheet {body.decision}",
+                                 "Your timesheet entry was {dec}.".format(dec=body.decision), "timesheet", "/employee/timesheets")
         else:
             if not user.is_admin:
                 scoped = sb.table("leave_requests").select("id, employee:employees!leave_requests_employee_id_fkey!inner (manager_id)").eq("id", body.id).eq("employee.manager_id", reviewer_id).maybe_single().execute()
@@ -434,7 +436,9 @@ def decide_approval(body: ApprovalDecision, request: Request, user: SessionUser 
             row = res.data[0]
             emp = sb.table("employees").select("profile_id").eq("id", row["employee_id"]).maybe_single().execute()
             if (emp.data or {}).get("profile_id"):
-                notify(emp.data["profile_id"], f"Leave {body.decision}", "Your leave request was {dec}.".format(dec=body.decision), "leave", "/employee/leave")
+                from app.services.email_service import notify_and_email
+                notify_and_email(sb, emp.data["profile_id"], None, f"Leave {body.decision}",
+                                 "Your leave request was {dec}.".format(dec=body.decision), "leave", "/employee/leave")
     except HTTPException:
         raise
     except Exception as e:

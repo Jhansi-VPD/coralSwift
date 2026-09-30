@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Users, CalendarClock, CalendarDays, Building2, UserPlus, UserCheck } from 'lucide-react';
 import { PortalShell } from '@/components/portal/PortalShell';
+import { AnnouncementsBanner } from '@/components/portal/AnnouncementsBanner';
 import { StatCard, SectionCard, StatusBadge, LoadingState, ErrorState, EmptyState } from '@/components/portal';
 import { portalClient } from '@/lib/portal-client';
 import { formatTimeAgo } from '@/lib/utils';
@@ -79,6 +80,7 @@ export default function HRDashboardPage() {
       subtitle="Workforce status, attendance, and pending leave approvals."
       actions={<button onClick={load} className="text-xs font-semibold text-slate-600 hover:text-slate-900">Refresh</button>}
     >
+      <AnnouncementsBanner max={2} />
       {loading && <LoadingState label="Loading people data…" />}
       {error && <ErrorState message={error} onRetry={load} />}
 

@@ -91,7 +91,7 @@ CLIENT_PROJECT_SELECT = (
     "client_review_status, submitted_for_review_at, client_feedback, client_feedback_at, "
     "expected_completion_date, start_date, target_end_date, "
     "milestones:milestones (id, title, description, due_date, status, sort_order, completed_at), "
-    "updates:project_updates (id, title, body, created_at, is_client_visible, author:profiles (full_name))"
+    "updates:project_updates (id, title, body, created_at, is_client_visible, visibility, author_role, author:profiles (full_name))"
 )
 
 
@@ -106,7 +106,12 @@ def project_detail(project_id: str, user: SessionUser = Depends(require_role("cl
     if not res.data:
         raise HTTPException(status_code=404, detail="Project not found")
     project = res.data
-    project["updates"] = [u for u in (project.get("updates") or []) if u.get("is_client_visible") is not False]
+    # Client-safe journal: legacy rows (is_client_visible flag) + new workflow rows
+    # (visibility='public' — manager-published updates from the tracking workflow).
+    project["updates"] = [
+        u for u in (project.get("updates") or [])
+        if u.get("visibility") == "public" or (u.get("is_client_visible") is not False and not u.get("visibility"))
+    ]
     return {"project": project}
 
 
@@ -257,6 +262,19 @@ def reply_ticket(body: TicketReply, request: Request, user: SessionUser = Depend
         }).execute()
     except Exception as e:
         raise_db_error(e)
+    # Notify the assigned staff member (in-app + email) that the client replied.
+    try:
+        full = sb.table("tickets").select("assigned_employee_id").eq("id", body.id).maybe_single().execute()
+        assignee_emp = (full.data or {}).get("assigned_employee_id") if full else None
+        if assignee_emp:
+            emp = sb.table("employees").select("profile_id").eq("id", assignee_emp).maybe_single().execute()
+            profile_id = (emp.data or {}).get("profile_id") if emp else None
+            if profile_id:
+                from app.services.email_service import notify_and_email
+                notify_and_email(sb, profile_id, None, f"Client replied on {ticket.data['ticket_number']}",
+                                 body.message.strip()[:300], "ticket", "/manager/projects")
+    except Exception:
+        pass
     return {"success": True}
 
 

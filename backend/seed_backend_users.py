@@ -40,6 +40,7 @@ USERS = [
     {"email": "sales@coralswift.com", "full_name": "Sam Sales", "role": "sales"},
     {"email": "manager@coralswift.com", "full_name": "Mira Manager", "role": "manager"},
     {"email": "employee@coralswift.com", "full_name": "Evan Employee", "role": "employee"},
+    {"email": "qa@coralswift.com", "full_name": "Quinn QA", "role": "qa"},
     {"email": "client@clientco.com", "full_name": "Clara Client", "role": "client"},
 ]
 
@@ -167,6 +168,31 @@ def main() -> None:
             {"project_id": proj_id, "title": "Compliance Review", "status": "pending", "sort_order": 2},
         ])
         print("  + 3 milestones")
+
+    print("\n[project membership + QA]")
+    # qa@coralswift.com gets an employee record so it can be assigned as project QA.
+    qa_emp_id = None
+    try:
+        lookup = sb.table("employees").select("id").eq("profile_id", ids["qa"]).limit(1).execute()
+        if lookup and lookup.data:
+            qa_emp_id = lookup.data[0]["id"]
+        else:
+            sb.table("employees").insert({
+                "profile_id": ids["qa"], "employee_code": "EMP-003",
+                "designation": "QA Engineer", "department_id": dept_id,
+                "manager_id": mgr_id, "status": "active",
+            }).execute()
+            final = sb.table("employees").select("id").eq("profile_id", ids["qa"]).limit(1).execute()
+            qa_emp_id = final.data[0]["id"] if final and final.data else None
+        if qa_emp_id:
+            sb.table("project_members").upsert({
+                "project_id": proj_id, "employee_id": qa_emp_id,
+                "allocation_percent": 25, "role_on_project": "QA",
+            }, on_conflict="project_id,employee_id").execute()
+            print("  + EMP-003 Quinn QA (project QA on CCP-01)")
+        sb.table("projects").update({"qa_employee_id": qa_emp_id}).eq("id", proj_id).execute()
+    except Exception as exc:
+        print(f"  ! QA seeding skipped: {exc}")
 
     print(f"\n[OK] Seed complete.\n  All demo passwords: {PASSWORD}\n  Full table: see docs/CREDENTIALS.md")
 

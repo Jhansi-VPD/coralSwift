@@ -11,7 +11,7 @@ from app.core.security import SessionUser, client_ip, require_role
 
 router = APIRouter(prefix="/hr", tags=["hr"])
 
-ROLES = ("admin", "hr", "sales", "manager", "employee", "client")
+ROLES = ("admin", "hr", "sales", "manager", "employee", "client", "qa")
 
 
 def _sb() -> Client:
@@ -389,21 +389,24 @@ def decide_leave(body: LeaveDecision, request: Request, user: SessionUser = Depe
         raise_db_error(e, "Failed to update leave")
 
     new_balance = None
-    if body.decision == "approved" and req["leave_type"] == "annual":
-        try:
-            emp = sb.table("employees").select("id, annual_leave_balance, profile_id").eq("id", req["employee_id"]).maybe_single().execute()
-            if emp.data:
-                days = _business_days(req["start_date"], req["end_date"])
-                new_balance = max(0, int(emp.data.get("annual_leave_balance") or 0) - days)
-                sb.table("employees").update({"annual_leave_balance": new_balance}).eq("id", emp.data["id"]).execute()
-                if emp.data.get("profile_id"):
-                    notify(
-                        emp.data["profile_id"], f"Leave {body.decision}",
-                        f"Your leave ({req['start_date']} → {req['end_date']}) was {body.decision}. Remaining balance: {new_balance} days.",
-                        "leave", "/employee/leave",
-                    )
-        except Exception as e:
-            raise_db_error(e, "Failed to adjust balance")
+    try:
+        emp = sb.table("employees").select("id, annual_leave_balance, profile_id").eq("id", req["employee_id"]).maybe_single().execute()
+        profile_id = (emp.data or {}).get("profile_id") if emp.data else None
+        if body.decision == "approved" and req["leave_type"] == "annual" and emp.data:
+            days = _business_days(req["start_date"], req["end_date"])
+            new_balance = max(0, int(emp.data.get("annual_leave_balance") or 0) - days)
+            sb.table("employees").update({"annual_leave_balance": new_balance}).eq("id", emp.data["id"]).execute()
+        if profile_id:
+            # In-app notification (always) + email (best-effort, when SMTP configured)
+            from app.services.email_service import notify_and_email
+            msg = f"Your leave ({req['start_date']} → {req['end_date']}) was {body.decision}."
+            if new_balance is not None:
+                msg += f" Remaining balance: {new_balance} days."
+            if body.notes:
+                msg += f" Note from HR: {body.notes}"
+            notify_and_email(sb, profile_id, None, f"Leave {body.decision}", msg, "leave", "/employee/leave")
+    except Exception as e:
+        raise_db_error(e, "Failed to adjust balance")
 
     audit(f"LEAVE_{body.decision.upper()}", "leave_requests", body.id, user, {"employee_id": req["employee_id"]}, client_ip(request))
     return {"success": True, "decision": body.decision, "newBalance": new_balance}

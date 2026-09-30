@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LogIn, LogOut, ListTodo, CalendarClock, CalendarDays, Bell } from 'lucide-react';
 import { PortalShell } from '@/components/portal/PortalShell';
+import { AnnouncementsBanner } from '@/components/portal/AnnouncementsBanner';
 import { StatCard, SectionCard, StatusBadge, LoadingState, ErrorState, EmptyState } from '@/components/portal';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -92,6 +93,7 @@ export default function EmployeeDashboardPage() {
       subtitle="Your tasks, attendance, hours, and leave at a glance."
       actions={<button onClick={load} className="text-xs font-semibold text-slate-600 hover:text-slate-900">Refresh</button>}
     >
+      <AnnouncementsBanner max={2} />
       {loading && <LoadingState label="Loading your workspace…" />}
       {error && <ErrorState message={error} onRetry={load} />}
 

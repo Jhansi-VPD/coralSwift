@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { StatusBadge, StatCard, LoadingState, ErrorState, EmptyState, TableShell } from '@/components/portal';
+import { ExportButton } from '@/components/portal/ExportButton';
 import { portalClient, formatMoney } from '@/lib/portal-client';
 import { formatDate } from '@/lib/utils';
 
@@ -34,7 +35,12 @@ export default function ClientInvoicesPage() {
   const paid = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0);
 
   return (
-    <PortalShell role="client" title="Invoices & Payments" subtitle="Your billing history and payment status.">
+    <PortalShell
+      role="client"
+      title="Invoices & Payments"
+      subtitle="Your billing history and payment status."
+      actions={<ExportButton resource="invoices" label="CSV" />}
+    >
       {loading && <LoadingState />}
       {error && <ErrorState message={error} />}
 

@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Briefcase, CalendarClock, CalendarDays, FolderKanban,
-  ListTodo, ClipboardList, FileText, Bell, LogOut, Globe, Mail, Handshake,
-  Building2, TrendingUp, PieChart, type LucideIcon,
+  ListTodo, ClipboardList, ClipboardCheck, FileText, Bell, LogOut, Globe, Mail, Handshake,
+  Building2, TrendingUp, PieChart, Send, Inbox, type LucideIcon,
 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { Badge } from '@/components/ui/Badge';
@@ -39,6 +39,7 @@ export const ROLE_HOME: Record<string, string> = {
   manager: '/manager',
   employee: '/employee',
   client: '/client',
+  qa: '/qa',
 };
 
 /** Each portal has its own branded login page; guards bounce there per role. */
@@ -49,6 +50,7 @@ export const ROLE_LOGIN: Record<string, string> = {
   manager: '/manager/login',
   employee: '/employee/login',
   client: '/client/login',
+  qa: '/qa/login',
 };
 
 const NAVS: Record<string, PortalNavItem[]> = {
@@ -62,13 +64,15 @@ const NAVS: Record<string, PortalNavItem[]> = {
   sales: [
     { label: 'Dashboard', href: '/sales', icon: LayoutDashboard },
     { label: 'Enquiries', href: '/sales/enquiries', icon: Mail },
-    { label: 'Leads', href: '/sales/leads', icon: TrendingUp },
+    { label: 'Pipeline', href: '/sales/leads', icon: TrendingUp },
     { label: 'Clients', href: '/sales/clients', icon: Building2 },
     { label: 'Follow-ups', href: '/sales/follow-ups', icon: Handshake },
+    { label: 'Calendar', href: '/sales/calendar', icon: CalendarDays },
   ],
   manager: [
     { label: 'Dashboard', href: '/manager', icon: LayoutDashboard },
     { label: 'Projects', href: '/manager/projects', icon: FolderKanban },
+    { label: 'Tracking', href: '/manager/tracking', icon: Inbox },
     { label: 'Approvals', href: '/manager/approvals', icon: ClipboardList },
     { label: 'Team', href: '/manager/team', icon: Users },
     { label: 'Reviews', href: '/manager/reviews', icon: PieChart },
@@ -76,9 +80,15 @@ const NAVS: Record<string, PortalNavItem[]> = {
   employee: [
     { label: 'Dashboard', href: '/employee', icon: LayoutDashboard },
     { label: 'My Tasks', href: '/employee/tasks', icon: ListTodo },
+    { label: 'Tracking', href: '/employee/tracking', icon: Send },
     { label: 'Timesheets', href: '/employee/timesheets', icon: CalendarClock },
     { label: 'Leave', href: '/employee/leave', icon: CalendarDays },
     { label: 'Documents', href: '/employee/documents', icon: FileText },
+  ],
+  qa: [
+    { label: 'Dashboard', href: '/qa', icon: LayoutDashboard },
+    { label: 'QA Reviews', href: '/qa/projects', icon: ClipboardCheck },
+    { label: 'Calendar', href: '/qa/calendar', icon: CalendarDays },
   ],
   client: [
     { label: 'Dashboard', href: '/client', icon: LayoutDashboard },
@@ -95,10 +105,11 @@ const ROLE_LABEL: Record<string, string> = {
   manager: 'Delivery Command',
   employee: 'My Workspace',
   client: 'Client Portal',
+  qa: 'Quality Assurance',
 };
 
 interface PortalShellProps {
-  role: 'hr' | 'sales' | 'manager' | 'employee' | 'client';
+  role: 'hr' | 'sales' | 'manager' | 'employee' | 'client' | 'qa';
   title: string;
   subtitle?: string;
   actions?: React.ReactNode;

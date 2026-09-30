@@ -18,7 +18,7 @@ def _repo() -> NotificationRepository:
 
 
 @router.get("", summary="My notifications")
-def my_notifications(unread: bool = False, user: SessionUser = Depends(require_role("hr", "sales", "manager", "employee", "client"))):
+def my_notifications(unread: bool = False, user: SessionUser = Depends(require_role("hr", "sales", "manager", "employee", "qa", "client"))):
     return _repo().list_for_user(user.id, unread_only=unread)
 
 
@@ -27,6 +27,6 @@ class NotificationUpdate(BaseModel):
 
 
 @router.patch("", summary="Mark one (id) or all as read")
-def mark_read(body: NotificationUpdate, user: SessionUser = Depends(require_role("hr", "sales", "manager", "employee", "client"))):
+def mark_read(body: NotificationUpdate, user: SessionUser = Depends(require_role("hr", "sales", "manager", "employee", "qa", "client"))):
     _repo().mark_read(user.id, body.id)
     return {"success": True}

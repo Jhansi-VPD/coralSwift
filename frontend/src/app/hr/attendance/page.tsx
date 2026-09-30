@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { StatusBadge, StatCard, LoadingState, ErrorState, EmptyState, TableShell } from '@/components/portal';
 import { Button } from '@/components/ui/Button';
+import { ExportButton } from '@/components/portal/ExportButton';
 import { portalClient } from '@/lib/portal-client';
 import { formatDate } from '@/lib/utils';
 
@@ -59,6 +60,7 @@ export default function HRAttendancePage() {
           <input type="date" value={from} onChange={e => setFrom(e.target.value)} className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs focus:outline-none shadow-xs" />
           <input type="date" value={to} onChange={e => setTo(e.target.value)} className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs focus:outline-none shadow-xs" />
           <Button variant="secondary" size="sm" onClick={load}>Apply</Button>
+          <ExportButton resource="attendance" label="CSV" />
         </div>
       }
     >

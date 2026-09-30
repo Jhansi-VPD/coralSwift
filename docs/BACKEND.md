@@ -16,7 +16,8 @@ CoralSwift/
 │   │   │   ├── rbac.py           # role → permission matrix + role home routes
 │   │   │   └── helpers.py        # audit, notify, db error mapping
 │   │   └── routers/              # auth, admin, hr, sales, manager, employee,
-│   │                             # client, public, content
+│   │                             # client, public, content, project_updates,
+│   │                             # announcements, exports
 │   ├── requirements.txt
 │   ├── run.py                    # uvicorn launcher (host/port from .env)
 │   ├── seed_backend_users.py     # idempotent demo-data seeder
@@ -55,6 +56,7 @@ Browser (Next.js UI, portal-client.ts / api.ts)
 | sales | `/sales` | `/api/sales` | leads, clients, proposals, contracts, analytics |
 | manager | `/manager` | `/api/manager` | projects, tasks, approvals (team), team, reviews |
 | employee | `/employee` | `/api/employee` | own tasks, timesheets, leave, attendance, documents, profile |
+| qa | `/qa` | `/api/tracking` | QA reviews on assigned projects (→ manager, → employee) |
 | client | `/client` | `/api/client` | own org's projects, review, tickets, invoices, documents |
 
 ## Auth
@@ -69,7 +71,9 @@ Browser (Next.js UI, portal-client.ts / api.ts)
 
 ## Database
 
-22 tables, migrations in [`supabase/migrations/`](../supabase/migrations/). People/HR/Sales/Delivery/Finance/Support/Shared groups plus `enquiry_status_history` and `project_updates`. Storage: `resumes` (applications) and `documents` (private, 10-minute signed URLs).
+23 tables, migrations in [`supabase/migrations/`](../supabase/migrations/). People/HR/Sales/Delivery/Finance/Support/Shared groups plus `enquiry_status_history`, `project_updates` (workflow-extended: author_role, visibility, review_status), and `announcements`. `projects.qa_employee_id` assigns the QA reviewer. Storage: `resumes` (applications) and `documents` (private, 10-minute signed URLs).
+
+> **Migration note:** run [`20260930100000_tracking_qa_announcements.sql`](../supabase/migrations/20260930100000_tracking_qa_announcements.sql) in the Supabase SQL editor before deploying the QA role + tracking workflow + announcements.
 
 ## API Surface (51 paths)
 
@@ -148,7 +152,7 @@ python -m venv .venv
 
 Frontend env ([frontend/.env.example](../frontend/.env.example)): set `NEXT_PUBLIC_API_URL=http://localhost:8000` (dev) or the deployed API origin (production).
 
-Demo accounts (all password `CoralSwift#2026` — change immediately in production): see [CREDENTIALS.md](CREDENTIALS.md). Each role signs in at its own portal login page (`/admin/login`, `/hr/login`, `/sales/login`, `/manager/login`, `/employee/login`, `/client/login`).
+Demo accounts (all password `CoralSwift#2026` — change immediately in production): see [CREDENTIALS.md](CREDENTIALS.md). Each role signs in at its own portal login page (`/admin/login`, `/hr/login`, `/sales/login`, `/manager/login`, `/employee/login`, `/qa/login`, `/client/login`).
 
 ## Security Model (3 layers)
 
@@ -162,14 +166,23 @@ Demo accounts (all password `CoralSwift#2026` — change immediately in producti
 Public form → enquiry (new)
   → admin assigns → assigned_to_sales (sales notified)
   → sales accepts (auto-creates qualified lead) / rejects (reason recorded)
-  → manager plans project (milestones, tasks, members)
-  → employees execute (tasks → timesheets → manager approval)
+  → manager plans project (milestones, tasks, members, assigns QA via qa_employee_id)
+  → employees execute (tasks → timesheets → manager approval; progress via /api/tracking)
+  → QA posts review notes → manager and directly to employees (visibility-gated)
+  → manager acknowledges team updates, publishes client-visible updates
   → manager submits for client review (client contacts notified)
   → client accepts (completed) or requests changes (manager notified, resubmit loop)
-  → admin dashboard finance visibility (invoiced / paid / outstanding)
+  → admin dashboard finance visibility (invoiced / paid / outstanding) + full tracking audit
 ```
 
-Supporting flows: leave → manager/HR approval → balance deduction + notification; attendance check-in/out → HR visibility; reviews → employee acknowledgment. State trails: `enquiry_status_history`, `project_updates`, `projects.client_review_status`.
+Supporting flows: leave → manager/HR approval → balance deduction + in-app/email notification; attendance check-in/out → HR visibility; reviews → employee acknowledgment. State trails: `enquiry_status_history`, `project_updates` (author_role / visibility / review_status), `projects.client_review_status`.
+
+## Add-on Modules
+
+- **Tracking** (`/api/tracking`) — project tracking & updates: employee → manager, QA → manager/employee, manager → client (`visibility: public|manager|employee`); `GET /summary` = admin audit view.
+- **Announcements** (`/api/announcements`) — admin/HR broadcasts with per-role targeting; renders as a banner on every portal dashboard; in-app fan-out on publish.
+- **Exports** (`/api/exports`) — CSV for attendance, leave, leads, invoices, projects, employees, timesheets, tickets (role-gated), plus `calendar.ics` and `calendar/google-links` (leave, sales follow-ups/meetings, milestones).
+- **Email** — `app/services/email_service.py`: SMTP (`SMTP_*` env vars). Unconfigured = emails skipped with an INFO log; in-app notifications always written.
 
 ## Dashboards
 

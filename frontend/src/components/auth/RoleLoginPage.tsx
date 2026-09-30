@@ -22,7 +22,7 @@ import { apiUrl, storeToken, clearToken } from '@/lib/api-base';
  */
 
 export interface RoleLoginConfig {
-  role: 'admin' | 'hr' | 'sales' | 'manager' | 'employee' | 'client';
+  role: 'admin' | 'hr' | 'sales' | 'manager' | 'employee' | 'client' | 'qa';
   /** Suite name shown under the logo, e.g. "People Operations". */
   suiteLabel: string;
   /** Field label for the email input. */
@@ -43,6 +43,7 @@ const ROLE_HOME_FALLBACK: Record<string, string> = {
   manager: '/manager',
   employee: '/employee',
   client: '/client',
+  qa: '/qa',
 };
 
 export function RoleLoginPage({ config }: { config: RoleLoginConfig }) {

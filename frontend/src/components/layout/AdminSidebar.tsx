@@ -9,6 +9,8 @@ import {
   Briefcase, 
   FileCheck, 
   MessageSquare, 
+  Megaphone,
+  Inbox,
   Sliders, 
   ShieldAlert, 
   LogOut, 
@@ -29,6 +31,8 @@ export function AdminSidebar() {
     { name: 'Careers & Jobs', href: '/admin/careers', icon: Briefcase },
     { name: 'Case Studies', href: '/admin/case-studies', icon: FileCheck },
     { name: 'Enquiries', href: '/admin/enquiries', icon: MessageSquare },
+    { name: 'Project Tracking', href: '/admin/tracking', icon: Inbox },
+    { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },
     { name: 'Site Settings', href: '/admin/settings', icon: Sliders },
     { name: 'Audit Logs', href: '/admin/audit-logs', icon: ShieldAlert },
   ];

@@ -82,9 +82,38 @@ export interface Paged<T> {
 export interface SessionUser {
   id: string | null;
   email: string;
-  role: 'admin' | 'hr' | 'sales' | 'manager' | 'employee' | 'client';
+  role: 'admin' | 'hr' | 'sales' | 'manager' | 'employee' | 'client' | 'qa';
   fullName: string;
   isActive: boolean;
+}
+
+export interface AnnouncementRecord {
+  id: string;
+  title: string;
+  body: string;
+  audience: string;
+  priority: 'low' | 'normal' | 'high';
+  created_at: string;
+  expires_at: string | null;
+  author: { full_name: string } | null;
+}
+
+export interface TrackingUpdateRecord {
+  id: string;
+  project_id: string;
+  title: string;
+  body: string | null;
+  author_role: string | null;
+  visibility: 'public' | 'manager' | 'employee';
+  review_status: string | null;
+  thread_root_id: string | null;
+  employee_id: string | null;
+  manager_acknowledged_at: string | null;
+  manager_note: string | null;
+  created_at: string;
+  author: { id: string; full_name: string; email: string } | null;
+  employee: { id: string; employee_code: string; profile: { full_name: string } | null } | null;
+  project?: { id: string; name: string; code: string | null };
 }
 
 export interface AdminStats {

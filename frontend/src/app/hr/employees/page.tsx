@@ -6,6 +6,7 @@ import { PortalShell } from '@/components/portal/PortalShell';
 import { StatusBadge, LoadingState, ErrorState, EmptyState, TableShell } from '@/components/portal';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { ExportButton } from '@/components/portal/ExportButton';
 import { portalClient } from '@/lib/portal-client';
 
 interface EmployeeRow {
@@ -110,6 +111,7 @@ export default function HREmployeesPage() {
             placeholder="Search…"
             className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs w-36 focus:outline-none shadow-xs"
           />
+          <ExportButton resource="employees" label="CSV" />
           <Button variant="coral" size="sm" onClick={() => setShowOnboard(true)}>
             <Plus className="w-3.5 h-3.5" /> Onboard
           </Button>

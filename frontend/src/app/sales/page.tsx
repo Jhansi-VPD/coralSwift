@@ -4,7 +4,9 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Mail, TrendingUp, Building2, Handshake, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { PortalShell } from '@/components/portal/PortalShell';
+import { AnnouncementsBanner } from '@/components/portal/AnnouncementsBanner';
 import { StatCard, SectionCard, StatusBadge, LoadingState, ErrorState, EmptyState } from '@/components/portal';
+import { BarChartCard, DonutChartCard } from '@/components/portal/Charts';
 import { portalClient, formatMoney } from '@/lib/portal-client';
 import { formatTimeAgo } from '@/lib/utils';
 
@@ -63,6 +65,7 @@ export default function SalesDashboardPage() {
       subtitle="Your assigned enquiries, pipeline health, and conversion performance."
       actions={<button onClick={load} className="text-xs font-semibold text-slate-600 hover:text-slate-900">Refresh</button>}
     >
+      <AnnouncementsBanner max={2} />
       {loading && <LoadingState label="Loading your pipeline…" />}
       {error && <ErrorState message={error} onRetry={load} />}
 
@@ -73,6 +76,26 @@ export default function SalesDashboardPage() {
             <StatCard label="Open Pipeline" value={formatMoney(analytics.openPipeline.value)} accent="indigo" icon={<TrendingUp className="w-4 h-4" />} sub={`${analytics.openPipeline.count} open leads`} />
             <StatCard label="Win Rate" value={analytics.conversion.winRate != null ? `${analytics.conversion.winRate}%` : '—'} accent="emerald" icon={<CheckCircle2 className="w-4 h-4" />} sub={`${analytics.conversion.leadsWon} won / ${analytics.conversion.leadsLost} lost`} />
             <StatCard label="Outstanding" value={formatMoney(analytics.revenue.outstanding)} accent="rose" icon={<Handshake className="w-4 h-4" />} sub={`${formatMoney(analytics.revenue.paidYtd)} paid YTD`} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SectionCard title="Pipeline Value by Stage">
+              <BarChartCard
+                data={analytics.pipeline.map(p => ({
+                  label: STAGE_LABELS[p.stage] ?? p.stage,
+                  value: Math.round(p.value),
+                }))}
+              />
+            </SectionCard>
+
+            <SectionCard title="Proposal Outcomes">
+              <DonutChartCard
+                data={[
+                  { label: 'Accepted', value: analytics.proposals.accepted, color: '#10B981' },
+                  { label: 'Sent (awaiting)', value: Math.max(0, analytics.proposals.sent - analytics.proposals.accepted), color: '#6366F1' },
+                ]}
+              />
+            </SectionCard>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

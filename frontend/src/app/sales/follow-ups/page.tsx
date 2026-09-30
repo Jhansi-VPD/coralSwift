@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CalendarPlus, Video } from 'lucide-react';
+import { CalendarPlus, Video, Download } from 'lucide-react';
 import { PortalShell } from '@/components/portal/PortalShell';
 import { StatusBadge, SectionCard, StatCard, LoadingState, ErrorState, EmptyState } from '@/components/portal';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { downloadIcs } from '@/lib/calendar';
 import { portalClient } from '@/lib/portal-client';
 import { formatDate, formatTimeAgo } from '@/lib/utils';
 
@@ -25,6 +26,7 @@ export default function SalesFollowUpsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [icsBusy, setIcsBusy] = useState(false);
   const [target, setTarget] = useState<EnquiryRow | null>(null);
   const [when, setWhen] = useState('');
   const [link, setLink] = useState('');
@@ -62,6 +64,11 @@ export default function SalesFollowUpsPage() {
     }
   };
 
+  const exportIcs = async () => {
+    setIcsBusy(true);
+    try { await downloadIcs(); } catch (err) { alert(err instanceof Error ? err.message : 'Export failed'); } finally { setIcsBusy(false); }
+  };
+
   const now = Date.now();
   const upcomingFollowUps = rows
     .filter(r => r.follow_up_at && new Date(r.follow_up_at).getTime() >= now)
@@ -71,7 +78,16 @@ export default function SalesFollowUpsPage() {
     .sort((a, b) => new Date(a.meeting_at!).getTime() - new Date(b.meeting_at!).getTime());
 
   return (
-    <PortalShell role="sales" title="Follow-ups & Meetings" subtitle="Scheduled touchpoints across your pipeline.">
+    <PortalShell
+      role="sales"
+      title="Follow-ups & Meetings"
+      subtitle="Scheduled touchpoints across your pipeline."
+      actions={
+        <Button variant="dark" size="sm" disabled={icsBusy} onClick={exportIcs}>
+          <Download className="w-3.5 h-3.5 mr-1.5 inline" /> Export .ics
+        </Button>
+      }
+    >
       {loading && <LoadingState />}
       {error && <ErrorState message={error} onRetry={load} />}
 
