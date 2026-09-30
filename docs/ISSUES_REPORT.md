@@ -93,7 +93,7 @@ If the database update of an enquiry **throws an error**, the API still answers 
 
 **Why it happens**: It was written as a "zero-config fallback" so the demo works without Supabase. But the fallback cannot distinguish "no DB configured" from "DB write failed."
 
-**Why this one stings**: The project's own `REMEDIATION_REPORT.md` documents fixing exactly this bug pattern in the *frontend* (finding F-025: "Removed `setIsSuccess(true)` from catch block; failed submissions now display an error instead of fake success"). The same disease survived in the admin API.
+**Why this one stings**: The project's own `supabase/REMEDIATION_REPORT.md` documents fixing exactly this bug pattern in the *frontend* (finding F-025: "Removed `setIsSuccess(true)` from catch block; failed submissions now display an error instead of fake success"). The same disease survived in the admin API.
 
 **Recommended fix**: Only return the fallback response when Supabase is genuinely unconfigured (`createAdminClient()` returned null). When the client exists and the operation throws, return a real error status (500) with the error message so the admin UI can display it.
 

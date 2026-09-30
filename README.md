@@ -39,4 +39,10 @@ The frontend application runs on `http://localhost:3000` (or next available port
 
 ### Database & Supabase
 - Migrations: `supabase/migrations/`
-- Seed data: `supabase/seed.sql` 
+- Seed data: `supabase/seed.sql`
+
+### Documentation
+- [`docs/BACKEND.md`](docs/BACKEND.md) — FastAPI backend architecture, API surface, and setup
+- [`docs/CREDENTIALS.md`](docs/CREDENTIALS.md) — demo account credentials (dev/testing only)
+- [`docs/ISSUES_REPORT.md`](docs/ISSUES_REPORT.md) — known issues and findings
+- [`backend/README.md`](backend/README.md) · [`frontend/README.md`](frontend/README.md) · [`supabase/README.md`](supabase/README.md)

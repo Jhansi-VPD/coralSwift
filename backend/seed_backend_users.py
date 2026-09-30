@@ -161,7 +161,7 @@ def main() -> None:
         ])
         print("  + 3 milestones")
 
-    print(f"\n✓ Seed complete.\n  All demo passwords: {PASSWORD}\n  Full table: see CREDENTIALS.md")
+    print(f"\n✓ Seed complete.\n  All demo passwords: {PASSWORD}\n  Full table: see docs/CREDENTIALS.md")
 
 
 if __name__ == "__main__":

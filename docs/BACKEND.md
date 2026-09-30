@@ -60,7 +60,7 @@ Browser (Next.js UI, portal-client.ts / api.ts)
 ## Auth
 
 - **Primary**: Supabase Auth. `POST /api/auth/login` → `{ success, user, accessToken, tokenType, expiresIn, redirectTo }`.
-- The frontend stores `accessToken` in `localStorage['coralswift_admin_auth']` and sends `Authorization: Bearer` on every call ([api-base.ts](frontend/src/lib/api-base.ts)).
+- The frontend stores `accessToken` in `localStorage['coralswift_admin_auth']` and sends `Authorization: Bearer` on every call ([api-base.ts](../frontend/src/lib/api-base.ts)).
 - **Session check**: `GET /api/auth/me` → `{ authenticated, source, user, permissions }`. Every portal layout gates rendering on this.
 - **Refresh**: `POST /api/auth/refresh` with `x-refresh-token` header.
 - **Logout**: `POST /api/auth/logout` (audited; client discards token).
@@ -69,7 +69,7 @@ Browser (Next.js UI, portal-client.ts / api.ts)
 
 ## Database
 
-22 tables, migrations in [`supabase/migrations/`](supabase/migrations/). People/HR/Sales/Delivery/Finance/Support/Shared groups plus `enquiry_status_history` and `project_updates`. Storage: `resumes` (applications) and `documents` (private, 10-minute signed URLs).
+22 tables, migrations in [`supabase/migrations/`](../supabase/migrations/). People/HR/Sales/Delivery/Finance/Support/Shared groups plus `enquiry_status_history` and `project_updates`. Storage: `resumes` (applications) and `documents` (private, 10-minute signed URLs).
 
 ## API Surface (51 paths)
 
@@ -146,7 +146,7 @@ python -m venv .venv
 .venv\Scripts\python run.py   # http://localhost:8000 — Swagger at /docs
 ```
 
-Frontend env ([frontend/.env.example](frontend/.env.example)): set `NEXT_PUBLIC_API_URL=http://localhost:8000` (dev) or the deployed API origin (production).
+Frontend env ([frontend/.env.example](../frontend/.env.example)): set `NEXT_PUBLIC_API_URL=http://localhost:8000` (dev) or the deployed API origin (production).
 
 Demo accounts (all password `CoralSwift#2026` — change immediately in production): see [CREDENTIALS.md](CREDENTIALS.md). The login page has one-click quick-fill for every role except admin.
 
