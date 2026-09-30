@@ -15,6 +15,18 @@ export function getApiBaseUrl(): string {
   // NEXT_PUBLIC_API_URL=http://localhost:8000 in dev; set to the deployed
   // FastAPI service in production (no trailing slash).
   const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  if (
+    typeof window !== 'undefined' &&
+    !process.env.NEXT_PUBLIC_API_URL &&
+    process.env.NODE_ENV === 'development'
+  ) {
+    // One-time dev hint: a missing .env.local silently targets port 8000,
+    // which may be another service entirely (or nothing at all).
+    console.warn(
+      '[coralswift] NEXT_PUBLIC_API_URL is not set — defaulting to http://localhost:8000. ' +
+        'Create frontend/.env.local (e.g. NEXT_PUBLIC_API_URL=http://localhost:8001) and restart `npm run dev`.'
+    );
+  }
   return raw.replace(/\/+$/, '');
 }
 
