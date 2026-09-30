@@ -47,7 +47,7 @@ export function AdminSidebar() {
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 md:sticky md:top-0 h-auto md:h-screen md:overflow-y-auto flex flex-col justify-between p-4 shrink-0 shadow-sm z-30">
+    <aside className="w-64 bg-white border-r border-slate-200 md:sticky md:top-0 h-auto md:h-[calc(100vh-4.5rem)] md:overflow-y-auto flex flex-col justify-between p-4 shrink-0 shadow-sm z-30">
       <div>
         {/* Brand */}
         <div className="px-2 py-4 mb-6 border-b border-slate-100">
