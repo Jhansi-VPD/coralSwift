@@ -24,8 +24,8 @@ def _org_id(sb, profile_id: str) -> str | None:
     return (res.data or {}).get("organization_id")
 
 
-def _require_org(sb, user: SessionUser) -> str:
-    org = _org_id(sb, user.id)
+def _require_org(sb, profile_id: str) -> str:
+    org = _org_id(sb, profile_id)
     if not org:
         raise HTTPException(status_code=403, detail="No client organization linked to this account")
     return org

@@ -32,7 +32,7 @@ export default function SalesFollowUpsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await portalClient.get<{ items: EnquiryRow[] }>('/api/enquiries?pageSize=100');
+      const data = await portalClient.get<{ items: EnquiryRow[] }>('/api/sales/enquiries?pageSize=100');
       setRows(data.items);
       setError(null);
     } catch (err) {
@@ -50,7 +50,7 @@ export default function SalesFollowUpsPage() {
     try {
       const payload: Record<string, unknown> = { [kind]: new Date(when).toISOString() };
       if (kind === 'meetingAt' && link) payload.meetingLink = link;
-      await portalClient.patch(`/api/enquiries/${target.id}`, payload);
+      await portalClient.patch(`/api/sales/enquiries/${target.id}`, payload);
       setTarget(null);
       setWhen('');
       setLink('');

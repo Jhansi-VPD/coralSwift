@@ -39,7 +39,7 @@ export default function SalesEnquiriesPage() {
       const params = new URLSearchParams({ pageSize: '50' });
       if (statusFilter !== 'all') params.set('status', statusFilter);
       if (search.trim()) params.set('q', search.trim());
-      const data = await portalClient.get<Paged<EnquiryRecord>>(`/api/enquiries?${params}`);
+      const data = await portalClient.get<Paged<EnquiryRecord>>(`/api/sales/enquiries?${params}`);
       setItems(data.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load enquiries');
@@ -53,7 +53,7 @@ export default function SalesEnquiriesPage() {
   const act = async (payload: Record<string, unknown>, enquiryId: string) => {
     setBusy(true);
     try {
-      await portalClient.patch(`/api/enquiries/${enquiryId}`, payload);
+      await portalClient.patch(`/api/sales/enquiries/${enquiryId}`, payload);
       setDialog({ mode: 'none' });
       await load();
     } catch (err) {
