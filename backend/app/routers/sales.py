@@ -24,7 +24,7 @@ def _sb() -> Client:
 LEAD_SELECT = (
     "id, company_name, contact_name, contact_email, contact_phone, service_interest, source, "
     "estimated_value, stage, loss_reason, converted_client_org_id, created_at, updated_at, "
-    "enquiry:enquiries (id, message, source_page), "
+    "enquiry:enquiries!leads_enquiry_id_fkey (id, message, source_page), "
     "owner:profiles!leads_owner_id_fkey (id, full_name, email)"
 )
 
@@ -512,3 +512,129 @@ def analytics(user: SessionUser = Depends(require_role("sales"))):
         },
         "revenue": {"invoicedYtd": invoiced, "paidYtd": paid, "outstanding": invoiced - paid},
     }
+
+
+# ---------------------------------------------------------------------------
+# Enquiries (sales-facing slice of the admin workflow)
+# ---------------------------------------------------------------------------
+
+ENQUIRY_SELECT = (
+    "id, full_name, email, company, phone, service_interest, message, consent, source_page, "
+    "status, admin_notes, created_at, assigned_to, assigned_at, follow_up_at, meeting_at, meeting_link, "
+    "assignee:profiles!enquiries_assigned_to_fkey (id, full_name, email, role)"
+)
+
+VALID_ENQUIRY_STATUSES = {
+    "new", "under_review", "assigned_to_sales", "sales_review",
+    "accepted", "rejected", "in_review", "contacted", "qualified", "closed",
+}
+
+
+@router.get("/enquiries", summary="Assigned + pool enquiries (sales workflow)")
+def list_enquiries(
+    status: str | None = None,
+    q: str | None = None,
+    page: int = 1,
+    pageSize: int = 25,
+    user: SessionUser = Depends(require_role("sales")),
+):
+    sb = _sb()
+    page, pageSize = max(1, page), min(100, max(5, pageSize))
+
+    try:
+        query = sb.table("enquiries").select(ENQUIRY_SELECT, count="exact")
+        # Sales sees enquiries assigned to them plus the unassigned pool.
+        query = query.or_(f"assigned_to.eq.{user.id},assigned_to.is.null")
+        if status and status != "all":
+            query = query.eq("status", status)
+        if q:
+            query = query.or_(f"full_name.ilike.%{q}%,company.ilike.%{q}%,email.ilike.%{q}%,message.ilike.%{q}%")
+        start = (page - 1) * pageSize
+        res = query.order("created_at", desc=True).range(start, start + pageSize - 1).execute()
+    except Exception as e:
+        raise_db_error(e, "Failed to list enquiries")
+
+    total = getattr(res, "count", 0) or 0
+    return {
+        "items": res.data or [],
+        "page": page,
+        "pageSize": pageSize,
+        "total": total,
+        "totalPages": max(1, -(-total // pageSize)),
+    }
+
+
+class EnquiryPatch(BaseModel):
+    status: str | None = None
+    notes: str | None = None
+    followUpAt: str | None = None
+    meetingAt: str | None = None
+    meetingLink: str | None = None
+    decisionNotes: str | None = None
+
+
+@router.patch("/enquiries/{enquiry_id}", summary="Sales enquiry workflow: claim / transition / schedule")
+def patch_enquiry(enquiry_id: str, body: EnquiryPatch, request: Request, user: SessionUser = Depends(require_role("sales"))):
+    sb = _sb()
+
+    try:
+        row = sb.table("enquiries").select("id,status,assigned_to,full_name,company,email").eq("id", enquiry_id).maybe_single().execute()
+    except Exception as e:
+        raise_db_error(e)
+    enquiry = row.data if row else None
+    if not enquiry:
+        raise HTTPException(status_code=404, detail="Enquiry not found")
+
+    # Sales may only touch unassigned-pool enquiries or their own.
+    if enquiry.get("assigned_to") and enquiry["assigned_to"] != user.id:
+        raise HTTPException(status_code=403, detail="This enquiry is assigned to another sales user")
+
+    updates: dict = {}
+    note = body.notes
+
+    # Claiming an unassigned enquiry assigns it to the current sales user.
+    if not enquiry.get("assigned_to") and (body.status or body.followUpAt or body.meetingAt):
+        updates |= {
+            "assigned_to": user.id,
+            "assigned_by": user.id,
+            "assigned_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+            "status": "assigned_to_sales" if enquiry["status"] in ("new", "under_review") else enquiry["status"],
+        }
+        note = f"Claimed by {user.full_name or user.email}"
+
+    if body.status:
+        if body.status not in VALID_ENQUIRY_STATUSES:
+            raise HTTPException(status_code=400, detail=f"Invalid status '{body.status}'")
+        if body.status == "rejected" and not (body.decisionNotes or body.notes):
+            raise HTTPException(status_code=422, detail="A rejection reason is required")
+        updates["status"] = body.status
+        try:
+            sb.table("enquiry_status_history").insert({
+                "enquiry_id": enquiry_id,
+                "from_status": enquiry["status"],
+                "to_status": body.status,
+                "changed_by": user.id,
+                "note": body.decisionNotes or body.notes,
+            }).execute()
+        except Exception as e:
+            raise_db_error(e, "Failed to record transition")
+
+    if body.notes is not None and not body.status:
+        updates["admin_notes"] = body.notes
+    if body.followUpAt is not None:
+        updates["follow_up_at"] = body.followUpAt or None
+    if body.meetingAt is not None:
+        updates["meeting_at"] = body.meetingAt or None
+    if body.meetingLink is not None:
+        updates["meeting_link"] = body.meetingLink or None
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+
+    try:
+        res = sb.table("enquiries").update(updates).eq("id", enquiry_id).select(ENQUIRY_SELECT).execute()
+    except Exception as e:
+        raise_db_error(e, "Failed to update enquiry")
+
+    audit("ENQUIRY_SALES_UPDATE", "enquiries", enquiry_id, user, {**updates, "note": note}, client_ip(request))
+    return res.data[0]
