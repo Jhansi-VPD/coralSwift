@@ -140,13 +140,16 @@ export function RoleLoginPage({ config }: { config: RoleLoginConfig }) {
             )}
 
             <div>
-              <label className="block text-xs font-mono uppercase text-slate-700 font-bold mb-2">
+              <label htmlFor="login-email" className="block text-xs font-mono uppercase text-slate-700 font-bold mb-2">
                 {config.emailLabel} <span className="text-coral-500">*</span>
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 <input
+                  id="login-email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -175,13 +178,16 @@ export function RoleLoginPage({ config }: { config: RoleLoginConfig }) {
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase text-slate-700 font-bold mb-2">
+              <label htmlFor="login-password" className="block text-xs font-mono uppercase text-slate-700 font-bold mb-2">
                 Password <span className="text-coral-500">*</span>
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 <input
+                  id="login-password"
+                  name="password"
                   type="password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
