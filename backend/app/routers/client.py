@@ -21,7 +21,8 @@ def _sb() -> Client:
 
 def _org_id(sb, profile_id: str) -> str | None:
     res = sb.table("client_contacts").select("organization_id").eq("profile_id", profile_id).maybe_single().execute()
-    return (res.data or {}).get("organization_id")
+    # postgrest-py 2.31: .maybe_single().execute() returns bare None when no row matches.
+    return ((res.data or {}).get("organization_id")) if res else None
 
 
 def _require_org(sb, profile_id: str) -> str:

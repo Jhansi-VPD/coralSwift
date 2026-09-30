@@ -358,7 +358,8 @@ def _business_days(start: str, end: str) -> int:
 
 def _my_employee_id(sb: Client, profile_id: str) -> str | None:
     res = sb.table("employees").select("id").eq("profile_id", profile_id).maybe_single().execute()
-    return (res.data or {}).get("id")
+    # postgrest-py 2.31: .maybe_single().execute() returns bare None when no row matches.
+    return ((res.data or {}).get("id")) if res else None
 
 
 @router.patch("/leave", summary="Approve / reject leave (deducts annual balance)")
