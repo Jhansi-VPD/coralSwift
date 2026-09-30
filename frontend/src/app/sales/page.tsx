@@ -43,7 +43,7 @@ export default function SalesDashboardPage() {
     try {
       const [a, e] = await Promise.all([
         portalClient.get<Analytics>('/api/sales/analytics'),
-        portalClient.get<{ items: EnquiryItem[] }>('/api/enquiries?pageSize=8'),
+        portalClient.get<{ items: EnquiryItem[] }>('/api/sales/enquiries?pageSize=8'),
       ]);
       setAnalytics(a);
       setEnquiries(e.items);
