@@ -86,12 +86,24 @@ All offline — no test touches the real database.
 
 ## Docker
 
+### Backend only
+```bash
+cd backend
+docker compose up --build
+```
+
+### Full stack (frontend + backend + Redis)
+From project root:
 ```bash
 docker compose up --build
 ```
 
-Non-root container, pinned deps, `/health` healthcheck, env from `.env`.
-Never bake secrets into the image.
+All setups:
+- Non-root container, pinned deps, `/health` healthcheck, env from `.env`
+- Never bake secrets into the image
+- Backend runs on port 8000, frontend on port 3000, Redis on port 6379
+- Health: `/health` (liveness) · `/health/db` (readiness, verifies Supabase)
+- Redis-backed rate limiting when `REDIS_URL` is set in `.env`
 
 ## Database
 

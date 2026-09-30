@@ -13,6 +13,7 @@ services:
       RELOAD: "false"
       ENVIRONMENT: production
       DEBUG: "false"
+      REDIS_URL: redis://redis:6379/0
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status==200 else 1)"]
@@ -20,3 +21,19 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: coralswift-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
