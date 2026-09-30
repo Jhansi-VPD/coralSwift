@@ -18,6 +18,7 @@ import {
   AdminStats 
 } from './types';
 import { createClient } from './supabase/client';
+import { apiUrl, authHeaders } from './api-base';
 
 // Local In-Memory Fallback State (Synchronized with mutations in local dev/runtime)
 let memoryServices = [...initialServices];
@@ -41,7 +42,7 @@ function isValidUUID(str?: string | null): boolean {
 export async function getServices(status?: 'published' | 'draft' | 'archived', adminMode?: boolean): Promise<Service[]> {
   if (typeof window !== 'undefined') {
     if (adminMode) {
-      const res = await fetch('/api/services?mode=admin');
+      const res = await fetch(apiUrl('/api/services?mode=admin'), { headers: authHeaders() });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Failed to fetch services' }));
         throw new Error(err.error || 'Failed to fetch services');
@@ -49,7 +50,7 @@ export async function getServices(status?: 'published' | 'draft' | 'archived', a
       return await res.json();
     }
     try {
-      const url = status ? `/api/services?status=${status}` : '/api/services';
+      const url = apiUrl(status ? `/api/services?status=${status}` : '/api/services');
       const res = await fetch(url);
       if (res.ok) {
         return await res.json();
@@ -108,9 +109,9 @@ export async function getServiceBySlug(slug: string): Promise<Service | null> {
 
 export async function saveService(service: Partial<Service>, supabaseClient?: any, ip?: string | null): Promise<Service> {
   if (typeof window !== 'undefined') {
-    const res = await fetch('/api/services', {
+    const res = await fetch(apiUrl('/api/services'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(service)
     });
     if (!res.ok) {
@@ -171,7 +172,7 @@ export async function saveService(service: Partial<Service>, supabaseClient?: an
 
 export async function deleteService(idOrSlug: string, supabaseClient?: any, ip?: string | null): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    const res = await fetch(`/api/services?id=${encodeURIComponent(idOrSlug)}`, { method: 'DELETE' });
+    const res = await fetch(apiUrl(`/api/services/${encodeURIComponent(idOrSlug)}`), { method: 'DELETE', headers: authHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed to delete service' }));
       throw new Error(err.error || 'Failed to delete service');
@@ -200,7 +201,7 @@ export async function deleteService(idOrSlug: string, supabaseClient?: any, ip?:
 export async function getJobs(status?: 'active' | 'closed' | 'draft', adminMode?: boolean): Promise<Job[]> {
   if (typeof window !== 'undefined') {
     if (adminMode) {
-      const res = await fetch('/api/jobs?mode=admin');
+      const res = await fetch(apiUrl('/api/jobs?mode=admin'), { headers: authHeaders() });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Failed to fetch jobs' }));
         throw new Error(err.error || 'Failed to fetch jobs');
@@ -208,7 +209,7 @@ export async function getJobs(status?: 'active' | 'closed' | 'draft', adminMode?
       return await res.json();
     }
     try {
-      const url = status ? `/api/jobs?status=${status}` : '/api/jobs';
+      const url = apiUrl(status ? `/api/jobs?status=${status}` : '/api/jobs');
       const res = await fetch(url);
       if (res.ok) {
         return await res.json();
@@ -276,9 +277,9 @@ export async function getJobByIdOrSlug(identifier: string): Promise<Job | null> 
 
 export async function saveJob(job: Partial<Job>, supabaseClient?: any, ip?: string | null): Promise<Job> {
   if (typeof window !== 'undefined') {
-    const res = await fetch('/api/jobs', {
+    const res = await fetch(apiUrl('/api/jobs'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(job)
     });
     if (!res.ok) {
@@ -341,7 +342,7 @@ export async function saveJob(job: Partial<Job>, supabaseClient?: any, ip?: stri
 
 export async function deleteJob(idOrSlug: string, supabaseClient?: any, ip?: string | null): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    const res = await fetch(`/api/jobs?id=${encodeURIComponent(idOrSlug)}`, { method: 'DELETE' });
+    const res = await fetch(apiUrl(`/api/jobs/${encodeURIComponent(idOrSlug)}`), { method: 'DELETE', headers: authHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed to delete job' }));
       throw new Error(err.error || 'Failed to delete job');
@@ -456,7 +457,7 @@ export async function submitApplication(appData: {
 
 export async function getApplications(): Promise<Application[]> {
   if (typeof window !== 'undefined') {
-    const res = await fetch('/api/admin/applications');
+    const res = await fetch(apiUrl('/api/admin/applications'), { headers: authHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed to fetch applications' }));
       throw new Error(err.error || 'Failed to fetch applications');
@@ -498,9 +499,9 @@ export async function getApplications(): Promise<Application[]> {
 
 export async function updateApplicationStatus(id: string, status: Application['status'], notes?: string, supabaseClient?: any): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    const res = await fetch('/api/admin/applications', {
+    const res = await fetch(apiUrl('/api/admin/applications'), {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ id, status, notes })
     });
     if (!res.ok) {
@@ -522,7 +523,7 @@ export async function updateApplicationStatus(id: string, status: Application['s
 
 export async function deleteApplication(id: string, supabaseClient?: any): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    const res = await fetch(`/api/admin/applications?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const res = await fetch(apiUrl(`/api/admin/applications/${encodeURIComponent(id)}`), { method: 'DELETE', headers: authHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed to delete application' }));
       throw new Error(err.error || 'Failed to delete application');
@@ -545,7 +546,7 @@ export async function deleteApplication(id: string, supabaseClient?: any): Promi
 export async function getCaseStudies(featuredOnly: boolean = false): Promise<CaseStudy[]> {
   if (typeof window !== 'undefined') {
     try {
-      const url = `/api/case-studies${featuredOnly ? '?featured=true' : ''}`;
+      const url = apiUrl(`/api/case-studies${featuredOnly ? '?featured=true' : ''}`);
       const res = await fetch(url);
       if (res.ok) {
         const data: CaseStudy[] = await res.json();
@@ -590,7 +591,7 @@ export async function getCaseStudies(featuredOnly: boolean = false): Promise<Cas
 export async function getAllCaseStudiesAdmin(): Promise<CaseStudy[]> {
   if (typeof window !== 'undefined') {
     try {
-      const res = await fetch('/api/case-studies?mode=admin');
+      const res = await fetch(apiUrl('/api/case-studies?mode=admin'), { headers: authHeaders() });
       if (res.ok) {
         return await res.json();
       }
@@ -629,9 +630,9 @@ export async function getCaseStudyBySlug(slug: string): Promise<CaseStudy | null
 
 export async function saveCaseStudy(caseStudy: Partial<CaseStudy>, supabaseClient?: any, ip?: string | null): Promise<CaseStudy> {
   if (typeof window !== 'undefined') {
-    const res = await fetch('/api/case-studies', {
+    const res = await fetch(apiUrl('/api/case-studies'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(caseStudy)
     });
     if (!res.ok) {
@@ -692,7 +693,7 @@ export async function saveCaseStudy(caseStudy: Partial<CaseStudy>, supabaseClien
 
 export async function deleteCaseStudy(idOrSlug: string, supabaseClient?: any, ip?: string | null): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    const res = await fetch(`/api/case-studies?id=${encodeURIComponent(idOrSlug)}`, { method: 'DELETE' });
+    const res = await fetch(apiUrl(`/api/case-studies/${encodeURIComponent(idOrSlug)}`), { method: 'DELETE', headers: authHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed to delete case study' }));
       throw new Error(err.error || 'Failed to delete case study');
@@ -730,9 +731,9 @@ export async function submitEnquiry(data: {
 }): Promise<{ success: boolean; id: string; message: string }> {
   if (typeof window !== 'undefined') {
     try {
-      const res = await fetch('/api/enquiries/submit', {
+      const res = await fetch(apiUrl('/api/enquiries/submit'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(data),
       });
       const json = await res.json();
@@ -841,7 +842,7 @@ export async function submitEnquiry(data: {
 
 export async function getEnquiries(): Promise<Enquiry[]> {
   if (typeof window !== 'undefined') {
-    const res = await fetch('/api/admin/enquiries');
+    const res = await fetch(apiUrl('/api/admin/enquiries'), { headers: authHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed to fetch enquiries' }));
       throw new Error(err.error || 'Failed to fetch enquiries');
@@ -863,9 +864,9 @@ export async function getEnquiries(): Promise<Enquiry[]> {
 
 export async function updateEnquiryStatus(id: string, status: Enquiry['status'], notes?: string, supabaseClient?: any): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    const res = await fetch('/api/admin/enquiries', {
+    const res = await fetch(apiUrl('/api/admin/enquiries'), {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ id, status, notes })
     });
     if (!res.ok) {
@@ -887,7 +888,7 @@ export async function updateEnquiryStatus(id: string, status: Enquiry['status'],
 
 export async function deleteEnquiry(id: string, supabaseClient?: any): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    const res = await fetch(`/api/admin/enquiries?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const res = await fetch(apiUrl(`/api/admin/enquiries/${encodeURIComponent(id)}`), { method: 'DELETE', headers: authHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed to delete enquiry' }));
       throw new Error(err.error || 'Failed to delete enquiry');
@@ -928,9 +929,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 
 export async function updateSiteSettings(key: keyof SiteSettings, value: any, supabaseClient?: any): Promise<boolean> {
   if (typeof window !== 'undefined') {
-    const res = await fetch('/api/admin/settings', {
+    const res = await fetch(apiUrl('/api/admin/settings'), {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ key, value })
     });
     if (!res.ok) {
@@ -955,7 +956,7 @@ export async function updateSiteSettings(key: keyof SiteSettings, value: any, su
 // ==============================================================================
 export async function getAuditLogs(): Promise<AuditLog[]> {
   if (typeof window !== 'undefined') {
-    const res = await fetch('/api/admin/audit-logs');
+    const res = await fetch(apiUrl('/api/admin/audit-logs'), { headers: authHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed to fetch audit logs' }));
       throw new Error(err.error || 'Failed to fetch audit logs');

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Bell, ShieldCheck, User } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { createClient } from '@/lib/supabase/client';
+import { apiUrl, authHeaders } from '@/lib/api-base';
 
 interface AdminHeaderProps {
   title: string;
@@ -30,9 +31,9 @@ export function AdminHeader({ title, subtitle, actions }: AdminHeaderProps) {
         }
       }
 
-      // 2. Fetch from session endpoint
+      // 2. Fetch from FastAPI session echo
       try {
-        const res = await fetch('/api/admin/me');
+        const res = await fetch(apiUrl('/api/admin/me'), { headers: authHeaders() });
         if (res.ok) {
           const data = await res.json();
           if (data.email) {

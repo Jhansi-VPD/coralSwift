@@ -2,260 +2,171 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Layers, 
-  Briefcase, 
-  FileCheck, 
-  MessageSquare, 
-  Users, 
-  TrendingUp, 
-  Clock, 
-  ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
-  AlertCircle
+import {
+  Layers, Briefcase, FileCheck, MessageSquare, Users, TrendingUp,
+  Clock, ShieldCheck, FolderKanban, ReceiptText, TicketCheck, CalendarClock,
 } from 'lucide-react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { getAdminStats, getEnquiries, getApplications, updateEnquiryStatus } from '@/lib/api';
-import { AdminStats, Enquiry, Application } from '@/lib/types';
-import { formatDate, formatTimeAgo } from '@/lib/utils';
+import { StatCard, SectionCard, StatusBadge, LoadingState, ErrorState, EmptyState } from '@/components/portal';
+import { portalClient, formatMoney, type AdminStats } from '@/lib/portal-client';
+import { formatTimeAgo } from '@/lib/utils';
+
+/**
+ * ADMIN DASHBOARD — existing UI structure, now wired to /api/admin/stats
+ * (real database aggregates instead of hardcoded/mocked numbers).
+ */
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
-  const [recentEnquiries, setRecentEnquiries] = useState<Enquiry[]>([]);
-  const [recentApplications, setRecentApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const [s, enqs, apps] = await Promise.all([
-        getAdminStats(),
-        getEnquiries(),
-        getApplications(),
-      ]);
-      setStats(s);
-      setRecentEnquiries(enqs.slice(0, 5));
-      setRecentApplications(apps.slice(0, 5));
-    } catch (e) {
-      console.error(e);
+      setStats(await portalClient.get<AdminStats>('/api/admin/stats'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load statistics');
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleStatusChange = async (enquiryId: string, newStatus: Enquiry['status']) => {
-    await updateEnquiryStatus(enquiryId, newStatus);
-    loadData();
-  };
+  useEffect(() => { loadData(); }, []);
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
       <AdminHeader
         title="Administrative Overview"
-        subtitle="Live metrics, recent inbound enquiries, and candidate applications."
-        actions={
-          <Button variant="secondary" size="sm" onClick={loadData}>
-            Refresh Data
-          </Button>
-        }
+        subtitle="Live organization-wide metrics across sales, delivery, people, finance, and support."
+        actions={<Button variant="secondary" size="sm" onClick={loadData}>Refresh Data</Button>}
       />
 
       <div className="p-6 sm:p-8 space-y-8 max-w-7xl">
-        
-        {/* KPI Stat Cards */}
-        {stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Services */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between text-slate-500 mb-3">
-                <span className="text-xs font-mono uppercase font-bold tracking-wider">Services Catalogue</span>
-                <div className="w-8 h-8 rounded-lg bg-coral-50 border border-coral-200 flex items-center justify-center text-coral-600">
-                  <Layers className="w-4 h-4" />
+        {isLoading && <LoadingState label="Crunching organization metrics…" />}
+        {!isLoading && error && <ErrorState message={error} onRetry={loadData} />}
+
+        {!isLoading && !error && stats && (
+          <>
+            {/* Business Overview */}
+            <section className="space-y-4">
+              <h2 className="text-xs font-mono uppercase font-bold tracking-wider text-slate-500">Business Overview</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+                <StatCard label="Total Enquiries" value={stats.business.totalEnquiries} icon={<MessageSquare className="w-4 h-4" />} />
+                <StatCard label="New Enquiries" value={stats.business.newEnquiries} accent="emerald" icon={<MessageSquare className="w-4 h-4" />} />
+                <StatCard label="Active Clients" value={stats.business.activeClients} accent="indigo" icon={<Briefcase className="w-4 h-4" />} />
+                <StatCard label="Active Projects" value={stats.business.activeProjects} accent="coral" icon={<FolderKanban className="w-4 h-4" />} />
+                <StatCard label="Completed Projects" value={stats.business.completedProjects} accent="cyan" icon={<FolderKanban className="w-4 h-4" />} />
+              </div>
+            </section>
+
+            {/* Sales + Projects */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <SectionCard
+                title="Sales Pipeline"
+                action={<Link href="/admin/enquiries" className="text-xs text-coral-600 font-semibold hover:underline">Manage enquiries →</Link>}
+              >
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">Open leads</div>
+                    <div className="text-2xl font-bold font-display text-[#0B1426]">{stats.sales.openLeads}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">Pipeline value</div>
+                    <div className="text-2xl font-bold font-display text-[#0B1426]">{formatMoney(stats.sales.pipelineValue)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">Won</div>
+                    <div className="text-2xl font-bold font-display text-emerald-600">{stats.sales.wonLeads}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">Won value</div>
+                    <div className="text-2xl font-bold font-display text-emerald-600">{formatMoney(stats.sales.wonValue)}</div>
+                  </div>
                 </div>
-              </div>
-              <div className="text-2xl font-bold text-[#0B1426] font-display">
-                {stats.published_services}{' '}
-                <span className="text-xs font-mono font-normal text-slate-500">/ {stats.total_services} active</span>
-              </div>
-              <div className="mt-2 text-xs text-coral-600 font-mono font-semibold">
-                <Link href="/admin/services" className="hover:underline">Manage Services →</Link>
-              </div>
-            </div>
+              </SectionCard>
 
-            {/* Active Careers */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between text-slate-500 mb-3">
-                <span className="text-xs font-mono uppercase font-bold tracking-wider">Open Positions</span>
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
-                  <Briefcase className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-[#0B1426] font-display">
-                {stats.active_jobs}
-              </div>
-              <div className="mt-2 text-xs text-indigo-600 font-mono font-semibold">
-                <Link href="/admin/careers?tab=applications" className="hover:underline">{stats.total_applications} Applications →</Link>
-              </div>
-            </div>
-
-            {/* Case Studies */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between text-slate-500 mb-3">
-                <span className="text-xs font-mono uppercase font-bold tracking-wider">Case Studies</span>
-                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-                  <FileCheck className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-[#0B1426] font-display">
-                {stats.total_case_studies}
-              </div>
-              <div className="mt-2 text-xs text-blue-600 font-mono font-semibold">
-                <Link href="/admin/case-studies" className="hover:underline">Manage Portfolio →</Link>
-              </div>
-            </div>
-
-            {/* Enquiries */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between text-slate-500 mb-3">
-                <span className="text-xs font-mono uppercase font-bold tracking-wider">Client Enquiries</span>
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-                  <MessageSquare className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-[#0B1426] font-display">
-                {stats.total_enquiries}{' '}
-                {stats.new_enquiries > 0 && (
-                  <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold border border-emerald-200">
-                    {stats.new_enquiries} New
-                  </span>
-                )}
-              </div>
-              <div className="mt-2 text-xs text-emerald-700 font-mono font-semibold">
-                <Link href="/admin/enquiries" className="hover:underline">Review Pipeline →</Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Two Column Section: Recent Enquiries & Recent Job Applications */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Recent Inquiries */}
-          <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-coral-600" />
-                <h3 className="text-base font-bold text-[#0B1426] font-display">
-                  Recent Inbound Inquiries
-                </h3>
-              </div>
-              <Link href="/admin/enquiries" className="text-xs font-mono text-coral-600 hover:underline font-semibold">
-                View All
-              </Link>
-            </div>
-
-            {recentEnquiries.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">No enquiries recorded yet.</p>
-            ) : (
-              <div className="space-y-3.5">
-                {recentEnquiries.map((enq) => (
-                  <div key={enq.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-[#0B1426] font-display">{enq.full_name}</span>
-                          <span className="text-xs text-slate-500 font-mono">• {enq.company}</span>
-                        </div>
-                        <div className="text-xs text-coral-600 font-mono font-medium">{enq.email}</div>
-                      </div>
-                      <Badge 
-                        variant={enq.status === 'new' ? 'emerald' : enq.status === 'in_review' ? 'amber' : 'slate'}
-                        size="sm"
-                      >
-                        {enq.status}
-                      </Badge>
-                    </div>
-
-                    <p className="text-xs text-slate-600 line-clamp-2">
-                      {enq.message}
-                    </p>
-
-                    <div className="pt-2 flex items-center justify-between text-[11px] font-mono text-slate-500 border-t border-slate-200/60">
-                      <span>{formatTimeAgo(enq.created_at)} • Service: {enq.service_interest}</span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => handleStatusChange(enq.id, 'in_review')}
-                          className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors font-medium shadow-2xs"
-                        >
-                          Review
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(enq.id, 'contacted')}
-                          className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors font-medium shadow-2xs"
-                        >
-                          Contacted
-                        </button>
-                      </div>
+              <SectionCard
+                title="Project Health"
+                action={<span className="text-xs font-mono text-slate-400">avg {stats.projects.avgProgress}%</span>}
+              >
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-2">Awaiting client review</div>
+                    <div className="text-2xl font-bold font-display text-amber-600">{stats.projects.awaitingReview}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-2">Changes requested</div>
+                    <div className="text-2xl font-bold font-display text-rose-600">{stats.projects.changesRequested}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono uppercase font-bold text-slate-400 mb-2">At risk / critical</div>
+                    <div className="text-2xl font-bold font-display text-rose-600">
+                      {(stats.projects.byHealth['at_risk'] ?? 0) + (stats.projects.byHealth['critical'] ?? 0)}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              </SectionCard>
+            </section>
 
-          {/* Recent Applications */}
-          <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-              <Link href="/admin/careers?tab=applications" className="flex items-center gap-2 group">
-                <Users className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform" />
-                <h3 className="text-base font-bold text-[#0B1426] font-display group-hover:text-indigo-600 transition-colors">
-                  Recent Applications
-                </h3>
-              </Link>
-              <Link href="/admin/careers?tab=applications" className="text-xs font-mono text-indigo-600 hover:underline font-semibold">
-                View All →
-              </Link>
-            </div>
+            {/* People / Finance / Support */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              <StatCard
+                label="Employees"
+                value={stats.employees.active}
+                sub={`${stats.employees.total} total • ${stats.employees.onLeaveToday} on leave today`}
+                accent="indigo"
+                icon={<Users className="w-4 h-4" />}
+              />
+              <StatCard
+                label="Outstanding"
+                value={formatMoney(stats.finance.outstanding)}
+                sub={`${stats.finance.invoiceCount} invoices • ${formatMoney(stats.finance.paid)} paid`}
+                accent="emerald"
+                icon={<ReceiptText className="w-4 h-4" />}
+              />
+              <StatCard
+                label="Open Tickets"
+                value={(stats.support['open'] ?? 0) + (stats.support['in_progress'] ?? 0)}
+                sub={`${stats.support['resolved'] ?? 0} resolved`}
+                accent="rose"
+                icon={<TicketCheck className="w-4 h-4" />}
+              />
+              <StatCard
+                label="Pending Leave"
+                value={stats.leavePending}
+                accent="amber"
+                icon={<CalendarClock className="w-4 h-4" />}
+              />
+            </section>
 
-            {recentApplications.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">No applications submitted yet.</p>
-            ) : (
-              <div className="space-y-3.5">
-                {recentApplications.map((app) => (
-                  <Link
-                    key={app.id}
-                    href="/admin/careers?tab=applications"
-                    className="block p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-indigo-300 hover:bg-white hover:shadow-xs transition-all space-y-2 group cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="text-sm font-bold text-[#0B1426] font-display group-hover:text-indigo-600 transition-colors">
-                          {app.full_name}
+            {/* Recent activity */}
+            <section>
+              <SectionCard title="Recent System Activity">
+                {stats.recentActivity.length === 0 ? (
+                  <p className="text-xs text-slate-400 font-mono">No activity recorded yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.recentActivity.map(a => (
+                      <div key={a.id} className="flex items-center justify-between gap-4 text-xs">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <ShieldCheck className="w-3.5 h-3.5 text-coral-500 shrink-0" />
+                          <span className="font-semibold text-[#0B1426] font-mono truncate">{a.action}</span>
+                          <span className="text-slate-400 truncate">{a.entity_type ?? ''}</span>
+                          <span className="text-slate-500 truncate">{a.user_email ?? 'system'}</span>
                         </div>
-                        <div className="text-xs text-slate-500 font-mono">{app.job_title}</div>
+                        <span className="text-slate-400 font-mono whitespace-nowrap">{formatTimeAgo(a.created_at)}</span>
                       </div>
-                      <Badge variant="blue" size="sm">{app.status}</Badge>
-                    </div>
-
-                    <div className="text-xs font-mono text-slate-500 flex items-center justify-between pt-1 border-t border-slate-200/60">
-                      <span>CV: {app.resume_filename}</span>
-                      <span>{formatDate(app.created_at)}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-        </div>
-
+                    ))}
+                  </div>
+                )}
+              </SectionCard>
+            </section>
+          </>
+        )}
       </div>
     </div>
   );

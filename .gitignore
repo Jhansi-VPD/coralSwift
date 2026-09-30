@@ -51,3 +51,13 @@ Thumbs.db
 *.sw?
 *reports
 .opencode
+
+# Python / FastAPI backend
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log

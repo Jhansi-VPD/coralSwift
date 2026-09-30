@@ -1,11 +1,11 @@
 'use client';
 
+import { apiUrl } from '@/lib/api-base';
 import React, { useState } from 'react';
 import { Upload, CheckCircle2, AlertCircle, FileText, Send } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Job } from '@/lib/types';
-import { submitApplication } from '@/lib/api';
 
 interface JobApplicationModalProps {
   isOpen: boolean;
@@ -177,36 +177,31 @@ export function JobApplicationModal({ isOpen, onClose, job }: JobApplicationModa
     });
 
     try {
-      const filename = resumeFile ? resumeFile.name : 'candidate_resume.pdf';
-      const cleanFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const resumePath = `/uploads/resumes/${Date.now()}_${cleanFilename}`;
-      let resumeDataUrl = '';
-      if (resumeFile) {
-        try {
-          resumeDataUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve((reader.result as string) || '');
-            reader.onerror = () => resolve('');
-            reader.readAsDataURL(resumeFile);
-          });
-        } catch (e) {
-          console.warn('File reading fallback:', e);
-        }
+      // FIX (ISSUES_REPORT #3): upload now goes through the server-side
+      // /api/applications/submit endpoint (multipart), which stores the resume
+      // in Supabase Storage with the service-role key. No client-side upload,
+      // no fake /uploads/ paths, no base64 payloads.
+      if (!resumeFile) {
+        setErrors(prev => ({ ...prev, resume: 'Please attach your resume before submitting.' }));
+        setIsLoading(false);
+        return;
       }
 
-      await submitApplication({
-        job_id: job.id,
-        full_name: formData.fullName.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim() || undefined,
-        portfolio_url: formData.portfolioUrl.trim() || undefined,
-        linkedin_url: formData.linkedinUrl.trim() || undefined,
-        cover_note: formData.coverNote.trim() || undefined,
-        resume_filename: filename,
-        resume_path: resumePath,
-        resume_url: resumeDataUrl || undefined,
-        resume_file: resumeFile || undefined,
-      });
+      const form = new FormData();
+      form.append('job_id', job.id);
+      form.append('full_name', formData.fullName.trim());
+      form.append('email', formData.email.trim());
+      if (formData.phone.trim()) form.append('phone', formData.phone.trim());
+      if (formData.portfolioUrl.trim()) form.append('portfolio_url', formData.portfolioUrl.trim());
+      if (formData.linkedinUrl.trim()) form.append('linkedin_url', formData.linkedinUrl.trim());
+      if (formData.coverNote.trim()) form.append('cover_note', formData.coverNote.trim());
+      form.append('resume', resumeFile);
+
+      const res = await fetch(apiUrl('/api/applications/submit'), { method: 'POST', body: form });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to submit application' }));
+        throw new Error(err.error || 'Failed to submit application');
+      }
 
       setIsSuccess(true);
     } catch (err: any) {

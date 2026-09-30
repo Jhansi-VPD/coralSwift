@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { createClient } from '@/lib/supabase/client';
+import { clearToken } from '@/lib/api-base';
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -33,9 +34,7 @@ export function AdminSidebar() {
   ];
 
   const handleLogout = async () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('coralswift_admin_auth');
-    }
+    clearToken();
     try {
       const supabase = createClient();
       if (supabase) {

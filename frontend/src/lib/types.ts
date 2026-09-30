@@ -90,10 +90,18 @@ export interface Enquiry {
   message: string;
   consent: boolean;
   source_page: string;
-  status: 'new' | 'in_review' | 'contacted' | 'qualified' | 'closed';
+  status: 'new' | 'in_review' | 'contacted' | 'qualified' | 'closed'
+    | 'under_review' | 'assigned_to_sales' | 'sales_review' | 'accepted' | 'rejected';
   admin_notes?: string;
   created_at: string;
   updated_at: string;
+  assigned_to?: string | null;
+  assigned_at?: string | null;
+  assigned_by?: string | null;
+  follow_up_at?: string | null;
+  meeting_at?: string | null;
+  meeting_link?: string | null;
+  assignee?: { id: string; full_name: string; email: string; role: string } | null;
 }
 
 export interface SiteSettings {

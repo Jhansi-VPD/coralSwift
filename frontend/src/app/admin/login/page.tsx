@@ -5,7 +5,17 @@ import { useRouter } from 'next/navigation';
 import { Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Logo } from '@/components/ui/Logo';
-import { logAuditAction } from '@/lib/api';
+import { apiUrl, storeToken, clearToken } from '@/lib/api-base';
+
+const DEMO_PASSWORD = 'CoralSwift#2026';
+
+const DEMO_ACCOUNTS = [
+  { role: 'hr', label: 'HR', email: 'hr@coralswift.com' },
+  { role: 'sales', label: 'Sales', email: 'sales@coralswift.com' },
+  { role: 'manager', label: 'Manager', email: 'manager@coralswift.com' },
+  { role: 'employee', label: 'Employee', email: 'employee@coralswift.com' },
+  { role: 'client', label: 'Client', email: 'client@clientco.com' },
+] as const;
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -41,7 +51,7 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/admin/login', {
+      const res = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
@@ -51,17 +61,21 @@ export default function AdminLoginPage() {
 
       if (!res.ok || !data.success) {
         setIsLoading(false);
-        setError(data.error || 'Invalid email or password. Please try again.');
+        setError(data.detail || data.error || 'Invalid email or password. Please try again.');
         return;
       }
 
+      // Persist the FastAPI bearer token (attached by api-base.ts on every call).
+      clearToken();
+      storeToken(data.accessToken);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('coralswift_admin_auth', 'true');
         localStorage.setItem('coralswift_admin_email', data.user?.email || email);
+        localStorage.setItem('coralswift_admin_role', data.user?.role || 'admin');
       }
-      logAuditAction('ADMIN_LOGIN_SUCCESS', 'AUTH', 'usr_admin', { email, method: 'password' });
+      // Audit logging happens server-side in the FastAPI login endpoint.
+      // Route each role to its own dashboard (unified login across all 6 roles).
       setTimeout(() => {
-        router.push('/admin');
+        router.push(data.redirectTo || '/admin');
       }, 500);
     } catch (err: any) {
       setIsLoading(false);
@@ -175,6 +189,33 @@ export default function AdminLoginPage() {
               <ArrowRight className="w-4 h-4 ml-1.5" />
             </Button>
           </form>
+        </div>
+
+        {/* Demo accounts — one-click fill for every role except admin */}
+        <div className="mt-5 bg-white/70 backdrop-blur rounded-2xl border border-slate-200 p-4">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-slate-500">
+              Demo accounts — click to fill
+            </span>
+            <span className="text-[10px] font-mono text-slate-400">CoralSwift#2026</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {DEMO_ACCOUNTS.map(acc => (
+              <button
+                key={acc.role}
+                type="button"
+                onClick={() => {
+                  setEmail(acc.email);
+                  setPassword(DEMO_PASSWORD);
+                  setFieldErrors({});
+                  setError('');
+                }}
+                className="px-2 py-2 rounded-xl bg-white border border-slate-200 hover:border-coral-400 hover:bg-coral-50/50 transition-all text-center"
+              >
+                <div className="text-[10px] font-bold font-mono uppercase text-slate-700">{acc.label}</div>
+              </button>
+            ))}
+          </div>
         </div>
 
       </div>

@@ -1,25 +1,38 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, Building2, Clock, CheckCircle2, MessageSquare, Filter, Trash2, AlertCircle } from 'lucide-react';
+import { Mail, Phone, Building2, Clock, CheckCircle2, MessageSquare, Filter, Trash2, AlertCircle, UserPlus, History } from 'lucide-react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { StatusBadge } from '@/components/portal';
 import { getEnquiries, updateEnquiryStatus, deleteEnquiry } from '@/lib/api';
+import { portalClient, type EnquiryRecord } from '@/lib/portal-client';
 import { Enquiry } from '@/lib/types';
 import { formatDate, formatTimeAgo } from '@/lib/utils';
 
 export default function AdminEnquiriesPage() {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [salesUsers, setSalesUsers] = useState<{ id: string; full_name: string; email: string }[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const loadData = async () => {
     const data = await getEnquiries();
     setEnquiries(data);
   };
+
+  // Load sales users once for the assignment dropdown
+  useEffect(() => {
+    portalClient
+      .get<{ id: string; email: string; full_name: string; role: string }[]>('/api/hr/users')
+      .then(users => setSalesUsers(users.filter(u => u.role === 'sales')))
+      .catch(() => setSalesUsers([]));
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -59,9 +72,32 @@ export default function AdminEnquiriesPage() {
     }
   };
 
-  const filtered = statusFilter === 'all' 
+  const handleAssign = async (enquiryId: string, salesUserId: string) => {
+    if (!salesUserId) return;
+    setIsAssigning(true);
+    try {
+      await portalClient.patch(`/api/enquiries/${enquiryId}`, { assignTo: salesUserId });
+      await loadData();
+      setSelectedEnquiry(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Assignment failed');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const filtered = (statusFilter === 'all' 
     ? enquiries 
-    : enquiries.filter(e => e.status === statusFilter);
+    : enquiries.filter(e => e.status === statusFilter)).filter(e => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        e.full_name?.toLowerCase().includes(q) ||
+        e.company?.toLowerCase().includes(q) ||
+        e.email?.toLowerCase().includes(q) ||
+        e.message?.toLowerCase().includes(q)
+      );
+    });
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
@@ -70,6 +106,13 @@ export default function AdminEnquiriesPage() {
         subtitle="Manage architecture consultations, triage requests, and review pipeline status."
         actions={
           <div className="flex items-center gap-2">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search name, company, email…"
+              className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 font-medium focus:outline-none shadow-xs w-44"
+            />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -115,12 +158,12 @@ export default function AdminEnquiriesPage() {
                       <div className="text-xs text-slate-500 font-mono font-medium">{enq.company}</div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge
-                        variant={enq.status === 'new' ? 'emerald' : enq.status === 'in_review' ? 'amber' : 'slate'}
-                        size="sm"
-                      >
-                        {enq.status}
-                      </Badge>
+                      <StatusBadge status={enq.status} size="sm" />
+                      {enq.assigned_to && (
+                        <Badge variant="indigo" size="sm">
+                          {enq.assignee?.full_name?.split(' ')[0] ?? 'Sales'}
+                        </Badge>
+                      )}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -158,18 +201,63 @@ export default function AdminEnquiriesPage() {
                     <p className="text-xs text-coral-600 font-mono font-bold">{selectedEnquiry.company}</p>
                   </div>
                   
-                  {/* Status Dropdown */}
+                  {/* Status Dropdown — extended workflow states */}
                   <select
                     value={selectedEnquiry.status}
                     onChange={(e) => handleStatusChange(selectedEnquiry.id, e.target.value as any)}
                     className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-coral-500/20"
                   >
                     <option value="new">New</option>
+                    <option value="under_review">Under Review</option>
+                    <option value="assigned_to_sales">Assigned to Sales</option>
+                    <option value="sales_review">Sales Review</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="rejected">Rejected</option>
                     <option value="in_review">In Review</option>
                     <option value="contacted">Contacted</option>
                     <option value="qualified">Qualified</option>
                     <option value="closed">Closed</option>
                   </select>
+                </div>
+
+                {/* Assignment panel */}
+                <div>
+                  <h4 className="text-xs font-mono uppercase text-slate-700 font-bold mb-2 flex items-center gap-1.5">
+                    <UserPlus className="w-3.5 h-3.5 text-coral-600" />
+                    Assign to Sales
+                  </h4>
+                  {selectedEnquiry.assigned_to ? (
+                    <div className="flex items-center justify-between gap-2 p-3 rounded-2xl bg-indigo-50 border border-indigo-200">
+                      <span className="text-xs font-semibold text-indigo-700">
+                        {selectedEnquiry.assignee?.full_name ?? 'Assigned'}
+                      </span>
+                      <select
+                        value=""
+                        onChange={(e) => handleAssign(selectedEnquiry.id, e.target.value)}
+                        className="px-2.5 py-1.5 rounded-xl bg-white border border-indigo-200 text-xs text-slate-700 focus:outline-none"
+                        disabled={isAssigning}
+                      >
+                        <option value="">Reassign…</option>
+                        {salesUsers.map(u => (
+                          <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value=""
+                        onChange={(e) => handleAssign(selectedEnquiry.id, e.target.value)}
+                        className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-coral-500/20"
+                        disabled={isAssigning}
+                      >
+                        <option value="">Select sales user…</option>
+                        {salesUsers.map(u => (
+                          <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3 text-xs font-mono text-slate-600">
