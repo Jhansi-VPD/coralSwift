@@ -66,22 +66,27 @@ def upsert_user(u: dict) -> str:
 
 
 def _write_then_id(table: str, payload: dict, mode: str, match: dict) -> str:
-    """Insert/upsert without chained .select() (unsupported in this postgrest
-    version), then read the row id back with a plain query."""
+    """Find-or-create: look the row up by `match` first (keeps re-runs
+    idempotent even when the column has a UNIQUE constraint), insert only
+    when missing, then read the id back. Chained .select() after writes is
+    unsupported in this postgrest version."""
+    lookup = sb.table(table).select("id")
+    for col, val in match.items():
+        lookup = lookup.eq(col, val)
+    res = lookup.limit(1).execute()
+    if res and res.data:
+        return res.data[0]["id"]
     q = sb.table(table)
-    if mode == "upsert":
-        q.upsert(payload).execute()
-    else:
-        q.insert(payload).execute()
+    (q.upsert(payload) if mode == "upsert" else q.insert(payload)).execute()
     row = sb.table(table).select("id")
     for col, val in match.items():
         row = row.eq(col, val)
-    res = row.limit(1).execute()
-    return res.data[0]["id"]
+    final = row.limit(1).execute()
+    return final.data[0]["id"]
 
 
 def main() -> None:
-    print("Seeding CoralSwift backend demo data…\n[users]")
+    print("Seeding CoralSwift backend demo data...\n[users]")
     ids = {u["role"]: upsert_user(u) for u in USERS}
 
     print("\n[departments]")
@@ -116,11 +121,13 @@ def main() -> None:
 
     print("\n[client organization]")
     # client_organizations has no UNIQUE(name) — do a manual find-or-create.
+    # NOTE: .maybe_single().execute() returns bare None when no row matches
+    # (postgrest-py 2.31), so guard the response object itself.
     existing_org = (
         sb.table("client_organizations").select("id")
         .eq("name", "ClientCo Industries").maybe_single().execute()
     )
-    if existing_org.data:
+    if existing_org and existing_org.data:
         org_id = existing_org.data["id"]
     else:
         org_id = _write_then_id(
@@ -153,15 +160,15 @@ def main() -> None:
     }, on_conflict="project_id,employee_id").execute()
 
     existing_ms = sb.table("milestones").select("id").eq("project_id", proj_id).limit(1).execute()
-    if not existing_ms.data:
+    if not (existing_ms and existing_ms.data):
         sb.table("milestones").insert([
-            {"project_id": proj.data["id"], "title": "Architecture Sign-off", "status": "completed", "sort_order": 0, "completed_at": "2026-09-01T00:00:00Z"},
-            {"project_id": proj.data["id"], "title": "Core Payment Rails", "status": "in_progress", "sort_order": 1},
-            {"project_id": proj.data["id"], "title": "Compliance Review", "status": "pending", "sort_order": 2},
+            {"project_id": proj_id, "title": "Architecture Sign-off", "status": "completed", "sort_order": 0, "completed_at": "2026-09-01T00:00:00Z"},
+            {"project_id": proj_id, "title": "Core Payment Rails", "status": "in_progress", "sort_order": 1},
+            {"project_id": proj_id, "title": "Compliance Review", "status": "pending", "sort_order": 2},
         ])
         print("  + 3 milestones")
 
-    print(f"\n✓ Seed complete.\n  All demo passwords: {PASSWORD}\n  Full table: see docs/CREDENTIALS.md")
+    print(f"\n[OK] Seed complete.\n  All demo passwords: {PASSWORD}\n  Full table: see docs/CREDENTIALS.md")
 
 
 if __name__ == "__main__":
