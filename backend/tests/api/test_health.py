@@ -12,7 +12,10 @@ def test_root_health(client: TestClient):
 def test_root(client: TestClient):
     r = client.get("/")
     assert r.status_code == 200
-    assert r.json()["docs"] == "/docs"
+    assert "text/html" in r.headers["content-type"]
+    assert "CoralSwift" in r.text
+    assert "Backend is running" in r.text
+    assert 'href="/docs"' in r.text
 
 
 def test_swagger_and_openapi(client: TestClient):
