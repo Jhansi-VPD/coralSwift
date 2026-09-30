@@ -216,7 +216,7 @@ app.include_router(api_router)
 @app.get("/", include_in_schema=False)
 def root(request: Request):
     """Branded landing page: CoralSwift logo + running status + Swagger link."""
-    # Show the port the browser actually reached (Host header), e.g. "localhost:8001".
+    # Show the port the browser actually reached (Host header), e.g. "localhost:8000".
     host_header = request.headers.get("host", "")
     port = host_header.rsplit(":", 1)[1] if ":" in host_header else str(settings.port or 8000)
     html = (

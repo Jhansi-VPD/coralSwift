@@ -4,7 +4,7 @@
 // must be allowed to fetch the API origin cross-origin. Beyond the standard
 // dev ports, honor NEXT_PUBLIC_API_URL (loaded from .env.local before this
 // file is evaluated) so production/staging API origins work without edits.
-const apiOrigins = new Set(['http://localhost:8000', 'http://localhost:8001']);
+const apiOrigins = new Set(['http://localhost:8000']);
 try {
   if (process.env.NEXT_PUBLIC_API_URL) {
     apiOrigins.add(new URL(process.env.NEXT_PUBLIC_API_URL).origin);

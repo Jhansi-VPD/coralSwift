@@ -23,9 +23,9 @@ if __name__ == "__main__":
         print(
             f"\n[!] Port {settings.port} is already in use on this machine.\n"
             f"    Start on another port instead:\n"
-            f"        PORT=8001 python run.py        (macOS/Linux)\n"
-            f"        set PORT=8001 && python run.py (Windows)\n"
-            f"    Then point the frontend at it: NEXT_PUBLIC_API_URL=http://localhost:8001\n"
+            f"        PORT=8002 python run.py        (macOS/Linux)\n"
+            f"        set PORT=8002 && python run.py (Windows)\n"
+            f"    Then point the frontend at it: NEXT_PUBLIC_API_URL=http://localhost:8002\n"
         )
     print(
         f"\n  CoralSwift API"

@@ -55,7 +55,7 @@ copy .env.example .env          :: fill SUPABASE_URL / keys
 
 - App: http://localhost:8000 · Swagger: http://localhost:8000/docs · ReDoc: /redoc
 - Health: `/health` (liveness) · `/health/db` (readiness, verifies Supabase)
-- Port busy? `set PORT=8001` then match `NEXT_PUBLIC_API_URL=http://localhost:8001` in the frontend.
+- Port busy? `set PORT=8002` then match `NEXT_PUBLIC_API_URL=http://localhost:8002` in the frontend.
 
 ## API versions
 
