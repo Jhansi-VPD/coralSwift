@@ -8,9 +8,13 @@ import { Logo } from '@/components/ui/Logo';
 
 export function Footer() {
   const pathname = usePathname();
-  const isAdmin = pathname.startsWith('/admin');
+  // Hidden inside the app shells (admin + role portals) — only the public
+  // marketing site shows the footer.
+  const inAppShell =
+    pathname.startsWith('/admin') ||
+    /^\/(hr|sales|manager|employee|client)(\/|$)/.test(pathname);
 
-  if (isAdmin) return null;
+  if (inAppShell) return null;
 
   return (
     <footer className="bg-gradient-to-b from-[#0B192C] via-[#0A1424] to-[#060D17] border-t border-blue-900/50 pt-8 pb-6 relative overflow-hidden text-slate-300">

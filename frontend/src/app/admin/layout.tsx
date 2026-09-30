@@ -58,12 +58,12 @@ export default function AdminLayout({
   }, [pathname, isLoginPage, router]);
 
   if (isLoginPage) {
-    return <div className="min-h-[calc(100vh-4.5rem)] bg-slate-50 text-slate-900">{children}</div>;
+    return <div className="min-h-screen bg-slate-50 text-slate-900">{children}</div>;
   }
 
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-[calc(100vh-4.5rem)] bg-slate-50 flex items-center justify-center text-slate-600 font-mono text-xs">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-600 font-mono text-xs">
         <div className="flex items-center gap-2 bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm">
           <div className="w-4 h-4 border-2 border-coral-500 border-t-transparent rounded-full animate-spin" />
           <span>Verifying Admin Session...</span>
@@ -77,7 +77,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-[calc(100vh-4.5rem)] bg-slate-50 flex flex-col md:flex-row text-slate-900">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-900">
       <AdminSidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden bg-slate-50">
         {children}

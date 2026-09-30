@@ -18,21 +18,23 @@ export function Navbar() {
   const { openConsultation } = useConsultation();
   const pathname = usePathname();
 
-  // Public site: fixed, floats over hero sections (as before).
-  // Portals & admin: rendered in normal flow above the app shell so the
-  // portal sidebar/header sit below it instead of underneath it.
+  // The marketing navbar is strictly public-site chrome. It never renders
+  // inside the app shells — not on admin pages, not in the role portals
+  // (/hr, /sales, /manager, /employee, /client), and not on their login pages.
   const inAppShell =
     pathname.startsWith('/admin') ||
     /^\/(hr|sales|manager|employee|client)(\/|$)/.test(pathname);
 
   useEffect(() => {
-    if (inAppShell) return; // no scroll effect needed for the in-flow variant
+    if (inAppShell) return;
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [inAppShell]);
+
+  if (inAppShell) return null;
   const navLinks: { name: string; href: string; badge?: string }[] = [
     { name: 'Home', href: '/' },
     { name: 'Services', href: '/services' },
@@ -44,14 +46,10 @@ export function Navbar() {
 
   return (
     <header
-      className={`z-40 transition-all duration-300 ${
-        inAppShell
-          ? 'relative bg-white border-b border-slate-200/60 py-2 shadow-sm'
-          : `fixed top-0 left-0 right-0 ${
-              isScrolled
-                ? 'bg-white/95 backdrop-blur-xl border-b border-slate-200/90 py-1.5 shadow-md'
-                : 'bg-white border-b border-slate-200/60 py-2 shadow-sm'
-            }`
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+        isScrolled
+          ? 'bg-white/95 backdrop-blur-xl border-b border-slate-200/90 py-1.5 shadow-md'
+          : 'bg-white border-b border-slate-200/60 py-2 shadow-sm'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

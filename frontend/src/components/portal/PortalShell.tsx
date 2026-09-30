@@ -169,7 +169,7 @@ export function PortalShell({ role, title, subtitle, actions, children }: Portal
   // ---- States ----
   if (authState === 'loading') {
     return (
-      <div className="min-h-[calc(100vh-4.5rem)] bg-slate-100 flex items-center justify-center text-slate-600 font-mono text-xs">
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center text-slate-600 font-mono text-xs">
         <div className="flex items-center gap-2 bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm">
           <div className="w-4 h-4 border-2 border-coral-500 border-t-transparent rounded-full animate-spin" />
           <span>Preparing your workspace…</span>
@@ -180,7 +180,7 @@ export function PortalShell({ role, title, subtitle, actions, children }: Portal
 
   if (authState === 'denied') {
     return (
-      <div className="min-h-[calc(100vh-4.5rem)] bg-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-10 text-center max-w-sm">
           <div className="text-lg font-bold text-[#0B1426] font-display mb-2">Access restricted</div>
           <p className="text-xs text-slate-500 mb-6">Your account does not have access to this workspace.</p>
@@ -193,9 +193,9 @@ export function PortalShell({ role, title, subtitle, actions, children }: Portal
   const nav = NAVS[role] ?? [];
 
   return (
-    <div className="min-h-[calc(100vh-4.5rem)] bg-slate-100 flex flex-col md:flex-row text-slate-900 font-display">
+    <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row text-slate-900 font-display">
       {/* Sidebar — dark navy, matches the public site's brand */}
-      <aside className="w-full md:w-64 bg-[#0B1426] border-b md:border-b-0 md:border-r border-white/5 md:sticky md:top-0 h-auto md:h-[calc(100vh-4.5rem)] md:overflow-y-auto flex flex-col justify-between p-4 shrink-0 z-30">
+      <aside className="w-full md:w-64 bg-[#0B1426] border-b md:border-b-0 md:border-r border-white/5 md:sticky md:top-0 h-auto md:h-screen md:overflow-y-auto flex flex-col justify-between p-4 shrink-0 z-30">
         <div>
           <div className="px-2 py-4 mb-6 border-b border-white/10">
             <Logo size="sm" variant="dark" />
