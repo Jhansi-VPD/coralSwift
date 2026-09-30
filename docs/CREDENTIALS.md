@@ -2,11 +2,20 @@
 
 > ⚠️ **Demo/testing only.** These accounts are created by `backend/seed_backend_users.py`
 > for local development and QA. Before any production deployment: rotate every password,
-> or delete the demo rows, and disable the quick-fill panel in the login page.
+> or delete the demo rows.
 
 ## Application Login
 
-All roles sign in at one place: **`/admin/login`** (unified login — the app routes each role to its own dashboard automatically).
+Every role has its own login page. Sign in at the portal for your role:
+
+| Role | Login URL |
+|------|-----------|
+| Admin | `/admin/login` |
+| HR | `/hr/login` |
+| Sales | `/sales/login` |
+| Manager | `/manager/login` |
+| Employee | `/employee/login` |
+| Client | `/client/login` |
 
 | Role | Email | Password |
 |------|-------|----------|
@@ -17,7 +26,7 @@ All roles sign in at one place: **`/admin/login`** (unified login — the app ro
 | Employee | `employee@coralswift.com` | `CoralSwift#2026` |
 | Client | `client@clientco.com` | `CoralSwift#2026` |
 
-The login page also shows one-click quick-fill buttons for every role **except admin** (HR, Sales, Manager, Employee, Client).
+Visiting a portal URL while signed out redirects to that portal's login page. There is no demo quick-fill — credentials must be entered manually.
 
 ## Where each role lands
 

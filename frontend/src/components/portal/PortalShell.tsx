@@ -41,6 +41,16 @@ export const ROLE_HOME: Record<string, string> = {
   client: '/client',
 };
 
+/** Each portal has its own branded login page; guards bounce there per role. */
+export const ROLE_LOGIN: Record<string, string> = {
+  admin: '/admin/login',
+  hr: '/hr/login',
+  sales: '/sales/login',
+  manager: '/manager/login',
+  employee: '/employee/login',
+  client: '/client/login',
+};
+
 const NAVS: Record<string, PortalNavItem[]> = {
   hr: [
     { label: 'Dashboard', href: '/hr', icon: LayoutDashboard },
@@ -114,12 +124,18 @@ export function PortalShell({ role, title, subtitle, actions, children }: Portal
           setAuthState('ok');
         } else {
           setAuthState('denied');
-          router.replace(data.authenticated ? (ROLE_HOME[data.user?.role ?? ''] ?? '/') : '/admin/login');
+          // Unauthenticated visitors of this portal get its own login page;
+          // authenticated-but-wrong-role users are sent to their portal home.
+          router.replace(
+            data.authenticated
+              ? (ROLE_HOME[data.user?.role ?? ''] ?? '/')
+              : (ROLE_LOGIN[role] ?? '/admin/login')
+          );
         }
       } catch {
         if (!cancelled) {
           setAuthState('denied');
-          router.replace('/admin/login');
+          router.replace(ROLE_LOGIN[role] ?? '/admin/login');
         }
       }
     })();
@@ -147,7 +163,7 @@ export function PortalShell({ role, title, subtitle, actions, children }: Portal
       // still redirect
     }
     clearToken();
-    router.push('/admin/login');
+    router.push(ROLE_LOGIN[role] ?? '/admin/login');
   };
 
   // ---- States ----

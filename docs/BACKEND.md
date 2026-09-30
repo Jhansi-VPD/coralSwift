@@ -148,7 +148,7 @@ python -m venv .venv
 
 Frontend env ([frontend/.env.example](../frontend/.env.example)): set `NEXT_PUBLIC_API_URL=http://localhost:8000` (dev) or the deployed API origin (production).
 
-Demo accounts (all password `CoralSwift#2026` — change immediately in production): see [CREDENTIALS.md](CREDENTIALS.md). The login page has one-click quick-fill for every role except admin.
+Demo accounts (all password `CoralSwift#2026` — change immediately in production): see [CREDENTIALS.md](CREDENTIALS.md). Each role signs in at its own portal login page (`/admin/login`, `/hr/login`, `/sales/login`, `/manager/login`, `/employee/login`, `/client/login`).
 
 ## Security Model (3 layers)
 

@@ -33,9 +33,14 @@ npm run dev
 
 The frontend application runs on `http://localhost:3000` (or next available port like `3001`).
 
-### Admin Portal
-- URL: `http://localhost:3000/admin/login`
-- Configure `ADMIN_EMAIL` and `ADMIN_PASSWORD` in your server `.env` file.
+### Portal Logins
+Every role has its own login page (same password for demo accounts — see `docs/CREDENTIALS.md`):
+- Admin: `http://localhost:3000/admin/login`
+- HR: `http://localhost:3000/hr/login`
+- Sales: `http://localhost:3000/sales/login`
+- Manager: `http://localhost:3000/manager/login`
+- Employee: `http://localhost:3000/employee/login`
+- Client: `http://localhost:3000/client/login`
 
 ### Database & Supabase
 - Migrations: `supabase/migrations/`
